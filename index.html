@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>나의 추억 앨범 만들기</title>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f1ea;color:#2b2623;font:18px/1.5 "Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+header{padding:20px 24px 8px}
+h1{margin:0 0 6px;font-size:28px}
+.note{margin:0;color:#6b5f58;font-size:16px}
+.wrap{display:grid;gap:20px;padding:16px 24px 40px;max-width:1400px;margin:0 auto}
+@media(min-width:1000px){.wrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pv{position:sticky;top:12px;align-self:start}}
+section{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,.08)}
+h2{margin:0 0 10px;font-size:22px}
+h2 b{display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;border-radius:50%;background:#3e6f5b;color:#fff;margin-right:8px;font-size:19px}
+label.pick,button{font:inherit;font-size:19px;padding:12px 18px;border-radius:10px;border:0;cursor:pointer;background:#3e6f5b;color:#fff;font-weight:700}
+button.sub{background:#e8e3d8;color:#2b2623}
+button:disabled{opacity:.5;cursor:not-allowed}
+label.pick{display:inline-block}
+input[type=file]{display:none}
+input[type=text],textarea,select{width:100%;font:inherit;padding:10px 12px;border:1.5px solid #cfc8bb;border-radius:8px;background:#fff;margin:4px 0}
+.card{border:1.5px solid #e2dccf;border-radius:12px;padding:12px;margin-top:12px}
+.card .no{font-weight:700;color:#8a5a44}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.row select{flex:1;min-width:140px;width:auto}
+.row button{padding:8px 12px;font-size:16px}
+.fld{display:grid;gap:2px;margin:8px 0}.fld span{font-size:16px;color:#6b5f58}
+canvas#cv{width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);background:#fff;display:block}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0}
+#msg{min-height:28px;font-weight:700;margin-top:10px}
+#msg.err{color:#b3261e}#msg.ok{color:#2e6b3e}
+</style>
+</head>
+<body>
+<header>
+<h1>나의 추억 앨범 만들기</h1>
+<p class="note">사진은 이 컴퓨터 밖으로 나가지 않습니다. 새로고침하면 작업이 사라지니, 끝나면 꼭 PDF로 저장하세요.</p>
+</header>
+<div class="wrap">
+<div>
+<section>
+<h2><b>1</b>사진 올리기</h2>
+<label class="pick" for="file">사진 고르기 (여러 장 가능)</label>
+<input id="file" type="file" accept="image/*" multiple>
+<p class="note">올린 순서대로 쪽이 만들어집니다. 사진 1장만으로도 PDF를 만들 수 있어요.</p>
+<div id="list"></div>
+</section>
+<section>
+<h2><b>2</b>표지와 마무리</h2>
+<div class="fld"><span>앨범 제목</span><input type="text" id="ct" maxlength="30" value="우리 집 이야기"></div>
+<div class="fld"><span>부제</span><input type="text" id="cs" maxlength="40" value="사진으로 엮은 나의 추억"></div>
+<div class="fld"><span>이름과 날짜 (예: 홍길동 · 2026.10.20)</span><input type="text" id="cn" maxlength="40"></div>
+<div class="fld"><span>표지에 쓸 사진</span><select id="cp"></select></div>
+<div class="fld"><span>마무리 문구</span><input type="text" id="ce" maxlength="40" value="우리 집 이야기, 이제 시작"></div>
+<div class="fld"><span>색 분위기</span><select id="th"></select></div>
+<div class="fld"><span>글꼴</span><select id="fo"></select></div>
+</section>
+</div>
+<div class="pv">
+<section>
+<h2><b>3</b>미리보기와 저장</h2>
+<canvas id="cv" width="1280" height="720"></canvas>
+<div class="nav"><button class="sub" id="prev">◀ 이전 쪽</button><span id="pg"></span><button class="sub" id="next">다음 쪽 ▶</button></div>
+<button id="save">PDF로 저장하기</button>
+<div id="msg" role="status" aria-live="polite"></div>
+</section>
+</div>
+</div>
+<script>
+const $=s=>document.querySelector(s),W=1280,H=720;
+const THEMES=[{n:'포근한 아이보리',bg:'#F7F3EC',ink:'#2B2623',ac:'#8A5A44'},{n:'맑은 하늘',bg:'#EEF3F8',ink:'#1F2A37',ac:'#3A6EA5'},{n:'짙은 초록',bg:'#2F4A3F',ink:'#F4F1EA',ac:'#E3C58F'}];
+const FONTS=[{n:'고딕',f:'"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'명조',f:'"Nanum Myeongjo","Batang",serif'},{n:'손글씨',f:'Gaegu,"Malgun Gothic",sans-serif'}];
+let photos=[],cur=0,coverIdx=-1,pend=0;
+THEMES.forEach((t,i)=>$('#th').add(new Option(t.n,i)));
+FONTS.forEach((t,i)=>$('#fo').add(new Option(t.n,i)));
+const total=()=>photos.length+2;
+const th=()=>THEMES[$('#th').value],fo=()=>FONTS[$('#fo').value].f;
+function msg(t,c){const m=$('#msg');m.textContent=t;m.className=c||''}
+function fitBox(im,x,y,w,h,cover){const r=cover?Math.max(w/im.width,h/im.height):Math.min(w/im.width,h/im.height),dw=im.width*r,dh=im.height*r;return[x+(w-dw)/2,y+(h-dh)/2,dw,dh]}
+function wrap(ctx,t,mw){const out=[];for(const para of String(t).split('\n')){let l='';for(const ch of para){if(l&&ctx.measureText(l+ch).width>mw){out.push(l.trimEnd());l=ch===' '?'':ch}else l+=ch}out.push(l)}return out}
+function textBlock(ctx,T,x,y,w,h,title,body,vmid){
+ const F=fo();let s=1,L;
+ for(;s>=0.4;s-=0.05){const ts=Math.round(48*s),bs=Math.round(32*s);L={ts,bs};
+  ctx.font=`700 ${ts}px ${F}`;L.tl=title?wrap(ctx,title,w):[];
+  ctx.font=`400 ${bs}px ${F}`;L.bl=body?wrap(ctx,body,w):[];
+  L.h=L.tl.length*ts*1.3+(L.tl.length&&L.bl.length?ts*.4:0)+L.bl.length*bs*1.55;
+  if(L.h<=h)break}
+ let yy=vmid?y+Math.max(0,(h-L.h)/2):y;ctx.textBaseline='top';
+ ctx.fillStyle=T.ac;ctx.font=`700 ${L.ts}px ${F}`;L.tl.forEach(t=>{ctx.fillText(t,x,yy);yy+=L.ts*1.3});
+ if(L.tl.length&&L.bl.length)yy+=L.ts*.4;
+ ctx.fillStyle=T.ink;ctx.font=`400 ${L.bs}px ${F}`;L.bl.forEach(t=>{ctx.fillText(t,x,yy);yy+=L.bs*1.55})}
+function centerText(ctx,txt,cx,y,maxW,size,weight,color,maxLines){
+ const F=fo();let s=size,ls;
+ for(;s>=24;s-=4){ctx.font=`${weight} ${s}px ${F}`;ls=wrap(ctx,txt,maxW);if(ls.length<=maxLines)break}
+ ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='top';
+ ls.forEach((t,i)=>ctx.fillText(t,cx,y+i*s*1.3));ctx.textAlign='left';return ls.length*s*1.3}
+function drawPage(ctx,i){
+ const T=th(),n=photos.length;ctx.clearRect(0,0,W,H);ctx.fillStyle=T.bg;ctx.fillRect(0,0,W,H);
+ if(i===0){ // 표지
+  const p=photos[coverIdx],has=!!p;
+  if(has){ctx.drawImage(p.c,...fitBox(p.c,0,0,W,H,true));ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H)}
+  const ink=has?'#FFFFFF':T.ink,ac=has?'#F3E3C0':T.ac;
+  const h1=centerText(ctx,$('#ct').value||'제목을 입력하세요',W/2,210,1060,92,'700',ink,2);
+  centerText(ctx,$('#cs').value,W/2,210+h1+30,1060,40,'400',ac,2);
+  centerText(ctx,$('#cn').value,W/2,H-110,1060,32,'400',ink,1);return}
+ if(i===n+1){ // 마무리
+  const h1=centerText(ctx,$('#ce').value||'고맙습니다',W/2,270,1060,72,'700',T.ac,2);
+  centerText(ctx,'AI로 다시 만나는 나의 추억',W/2,270+h1+30,1060,28,'400',T.ink,1);return}
+ const p=photos[i-1],im=p.c,title=p.title.trim(),body=p.text.trim(),has=title||body;
+ let pos=p.pos;if(pos==='auto')pos=im.width/im.height>=1.6?'below':'right';
+ let pb,tb;
+ if(!has)pb=[60,50,W-120,H-100];
+ else if(pos==='right'){pb=[60,60,680,600];tb=[790,60,430,600]}
+ else{pb=[60,40,1160,415];tb=[100,480,1080,205]}
+ const [dx,dy,dw,dh]=fitBox(im,...pb);
+ ctx.save();ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=18;ctx.shadowOffsetY=4;ctx.fillStyle='#fff';ctx.fillRect(dx-12,dy-12,dw+24,dh+24);ctx.restore();
+ ctx.drawImage(im,dx,dy,dw,dh);
+ if(has)textBlock(ctx,T,...tb,title,body,pos==='right');
+ ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font=`400 22px ${fo()}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(`${i}번`,W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
+async function fontsReady(){const f=fo();try{await Promise.race([Promise.all(['400','700'].map(w=>document.fonts.load(`${w} 40px ${f}`,'가나다'))),new Promise(r=>setTimeout(r,3000))])}catch(e){}}
+let rt=0;
+function render(){clearTimeout(rt);rt=setTimeout(async()=>{await fontsReady();cur=Math.min(cur,total()-1);drawPage($('#cv').getContext('2d'),cur);$('#pg').textContent=`${cur+1} / ${total()}쪽`;$('#prev').disabled=cur===0;$('#next').disabled=cur>=total()-1},30)}
+function refreshCover(){const s=$('#cp');s.innerHTML='';s.add(new Option('사진 없이 색 배경',-1));photos.forEach((_,i)=>s.add(new Option(`${i+1}번 사진`,i)));
+ if(coverIdx>=photos.length)coverIdx=photos.length-1;s.value=coverIdx}
+function thumb(c){const t=document.createElement('canvas');t.width=160;t.height=120;const x=t.getContext('2d');x.fillStyle='#eee';x.fillRect(0,0,160,120);x.drawImage(c,...fitBox(c,0,0,160,120));return t}
+function buildList(){const L=$('#list');L.innerHTML='';
+ photos.forEach((p,i)=>{const d=document.createElement('div');d.className='card';
+  d.innerHTML=`<div class="no">${i+1}번 사진</div><div class="row"></div><input class="t" type="text" maxlength="30" placeholder="제목 (예: 아버지의 어린 시절)"><textarea class="b" rows="3" maxlength="240" placeholder="사진 설명 (3~4문장, 100자 안팎이 보기 좋아요)"></textarea><div class="row"><select class="s"><option value="auto">글 위치: 자동</option><option value="right">글 위치: 오른쪽</option><option value="below">글 위치: 아래</option></select><button class="sub u">▲ 위로</button><button class="sub dn">▼ 아래로</button><button class="sub x">삭제</button></div>`;
+  d.querySelector('.row').append(thumb(p.c));
+  const t=d.querySelector('.t'),b=d.querySelector('.b'),s=d.querySelector('.s');t.value=p.title;b.value=p.text;s.value=p.pos;
+  const go=()=>{cur=i+1;render()};
+  t.oninput=()=>{p.title=t.value;go()};b.oninput=()=>{p.text=b.value;go()};s.onchange=()=>{p.pos=s.value;go()};
+  t.onfocus=b.onfocus=go;
+  d.querySelector('.u').onclick=()=>mv(i,-1);d.querySelector('.dn').onclick=()=>mv(i,1);
+  d.querySelector('.x').onclick=()=>{photos.splice(i,1);cur=Math.min(cur,total()-1);if(!photos.length)coverIdx=-1;refreshCover();buildList();render()};
+  L.append(d)})}
+function mv(i,k){const j=i+k;if(j<0||j>=photos.length)return;[photos[i],photos[j]]=[photos[j],photos[i]];if(coverIdx===i)coverIdx=j;else if(coverIdx===j)coverIdx=i;cur=j+1;refreshCover();buildList();render()}
+function loadFile(f){return new Promise((ok,no)=>{const u=URL.createObjectURL(f),im=new Image();
+ im.onload=()=>{const s=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c)};
+ im.onerror=()=>{URL.revokeObjectURL(u);no(f.name)};im.src=u})}
+$('#file').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
+ msg('사진을 불러오는 중입니다…');const bad=[];
+ for(const f of fs){try{photos.push({c:await loadFile(f),title:'',text:'',pos:'auto'})}catch(x){bad.push(x)}}
+ if(coverIdx<0&&photos.length)coverIdx=0;
+ refreshCover();buildList();cur=photos.length?photos.length:0;render();
+ if(bad.length)msg(`열 수 없는 사진이 있습니다: ${bad.join(', ')} — JPG 또는 PNG로 저장한 사진을 올려 주세요. (아이폰 HEIC 등)`,'err');
+ else msg(`사진 ${fs.length}장을 불러왔습니다.`,'ok')};
+['ct','cs','cn','ce','th','fo'].forEach(id=>$('#'+id).addEventListener('input',()=>{cur=id==='ce'?total()-1:id==='th'||id==='fo'?cur:0;render()}));
+$('#cp').onchange=()=>{coverIdx=+$('#cp').value;cur=0;render()};
+$('#prev').onclick=()=>{cur--;render()};$('#next').onclick=()=>{cur++;render()};
+async function makePDF(){
+ await fontsReady();const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d'),pages=[];
+ for(let i=0;i<total();i++){drawPage(ctx,i);const b=atob(c.toDataURL('image/jpeg',.92).split(',')[1]),u=new Uint8Array(b.length);for(let k=0;k<b.length;k++)u[k]=b.charCodeAt(k);pages.push(u)}
+ const enc=new TextEncoder(),parts=[],offs=[];let len=0;
+ const add=x=>{const u=typeof x==='string'?enc.encode(x):x;parts.push(u);len+=u.length};
+ const obj=(n,body)=>{offs[n]=len;add(`${n} 0 obj\n${body}\nendobj\n`)};
+ const N=pages.length;add('%PDF-1.4\n');
+ obj(1,'<</Type/Catalog/Pages 2 0 R>>');
+ obj(2,`<</Type/Pages/Count ${N}/Kids[${pages.map((_,k)=>`${3+3*k} 0 R`).join(' ')}]>>`);
+ pages.forEach((u,k)=>{const p=3+3*k,cs='q 960 0 0 540 0 0 cm /Im Do Q';
+  obj(p,`<</Type/Page/Parent 2 0 R/MediaBox[0 0 960 540]/Contents ${p+1} 0 R/Resources<</XObject<</Im ${p+2} 0 R>>>>>>`);
+  obj(p+1,`<</Length ${cs.length}>>\nstream\n${cs}\nendstream`);
+  offs[p+2]=len;add(`${p+2} 0 obj\n<</Type/XObject/Subtype/Image/Width ${W}/Height ${H}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${u.length}>>\nstream\n`);add(u);add('\nendstream\nendobj\n')});
+ const xr=len,M=3*N+3;let x=`xref\n0 ${M}\n0000000000 65535 f \n`;
+ for(let n=1;n<M;n++)x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
+ add(x+`trailer\n<</Size ${M}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`);
+ return new Blob(parts,{type:'application/pdf'})}
+$('#save').onclick=async()=>{
+ if(!photos.length){msg('먼저 1번에서 사진을 1장 이상 올려 주세요.','err');return}
+ $('#save').disabled=true;msg('PDF를 만드는 중입니다…');
+ try{const blob=await makePDF(),a=document.createElement('a'),nm=($('#ct').value||'앨범').replace(/[\\\/:*?"<>|]/g,'');
+  a.href=URL.createObjectURL(blob);a.download=nm+'.pdf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  msg(`저장했습니다: ${nm}.pdf (${total()}쪽). 다운로드 폴더에서 열어 확인하세요.`,'ok')}
+ catch(e){msg('PDF를 만들지 못했습니다. 사진 수를 줄여 다시 시도해 주세요.','err')}
+ $('#save').disabled=false};
+refreshCover();render();
+</script>
+</body>
+</html>
