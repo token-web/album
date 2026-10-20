@@ -28,8 +28,9 @@ input[type=text],textarea,select{width:100%;font:inherit;padding:10px 12px;borde
 .row select{flex:1;min-width:140px;width:auto}
 .row button{padding:8px 12px;font-size:16px}
 .fld{display:grid;gap:2px;margin:8px 0}.fld span{font-size:16px;color:#6b5f58}
-canvas#cv{width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);background:#fff;display:block}
+canvas#cv{margin:0 auto;width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);background:#fff;display:block}
 .nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0}
+#save{width:100%}.saves{display:grid;gap:8px;grid-template-columns:1fr 1fr}.saves #save{grid-column:1/-1}
 #msg{min-height:28px;font-weight:700;margin-top:10px}
 #msg.err{color:#b3261e}#msg.ok{color:#2e6b3e}
 </style>
@@ -55,6 +56,8 @@ canvas#cv{width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(0
 <div class="fld"><span>이름과 날짜 (예: 홍길동 · 2026.10.20)</span><input type="text" id="cn" maxlength="40"></div>
 <div class="fld"><span>표지에 쓸 사진</span><select id="cp"></select></div>
 <div class="fld"><span>마무리 문구</span><input type="text" id="ce" maxlength="40" value="우리 집 이야기, 이제 시작"></div>
+<div class="fld"><span>화면 비율 (저장되는 모양)</span><select id="fm"></select></div>
+<p class="note">세로형(9:16, 4:5)에서는 글이 항상 사진 아래에 놓입니다.</p>
 <div class="fld"><span>색 분위기</span><select id="th"></select></div>
 <div class="fld"><span>글꼴</span><select id="fo"></select></div>
 </section>
@@ -64,23 +67,37 @@ canvas#cv{width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(0
 <h2><b>3</b>미리보기와 저장</h2>
 <canvas id="cv" width="1280" height="720"></canvas>
 <div class="nav"><button class="sub" id="prev">◀ 이전 쪽</button><span id="pg"></span><button class="sub" id="next">다음 쪽 ▶</button></div>
-<button id="save">PDF로 저장하기</button>
+<div class="saves"><button id="save">PDF로 저장하기</button><button class="sub" id="savePng">이 쪽만 PNG로 저장</button><button class="sub" id="savePngAll">전체 쪽 PNG (ZIP)</button></div>
 <div id="msg" role="status" aria-live="polite"></div>
 </section>
 </div>
 </div>
 <script>
-const $=s=>document.querySelector(s),W=1280,H=720;
+const $=s=>document.querySelector(s);
+const FORMATS=[{n:'가로형 16:9 (발표·TV·유튜브)',w:1280,h:720,s:1.5,t:'16x9'},{n:'세로형 9:16 (스토리·릴스·휴대폰)',w:720,h:1280,s:1.5,t:'9x16'},{n:'인스타 피드 4:5 (1080×1350)',w:1080,h:1350,s:1,t:'4x5'}];
+let W=1280,H=720,S=1.5;
 const THEMES=[{n:'포근한 아이보리',bg:'#F7F3EC',ink:'#2B2623',ac:'#8A5A44'},{n:'맑은 하늘',bg:'#EEF3F8',ink:'#1F2A37',ac:'#3A6EA5'},{n:'짙은 초록',bg:'#2F4A3F',ink:'#F4F1EA',ac:'#E3C58F'}];
 const FONTS=[{n:'고딕',f:'"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'명조',f:'"Nanum Myeongjo","Batang",serif'},{n:'손글씨',f:'Gaegu,"Malgun Gothic",sans-serif'}];
 let photos=[],cur=0,coverIdx=-1,pend=0;
 THEMES.forEach((t,i)=>$('#th').add(new Option(t.n,i)));
 FONTS.forEach((t,i)=>$('#fo').add(new Option(t.n,i)));
+FORMATS.forEach((t,i)=>$('#fm').add(new Option(t.n,i)));
+const fmtTag=()=>FORMATS[$('#fm').value].t;
+function applyFormat(){const f=FORMATS[$('#fm').value];W=f.w;H=f.h;S=f.s;const c=$('#cv');c.width=W;c.height=H;c.style.width=`min(100%,${Math.round(78*W/H)}vh)`}
 const total=()=>photos.length+2;
 const th=()=>THEMES[$('#th').value],fo=()=>FONTS[$('#fo').value].f;
 function msg(t,c){const m=$('#msg');m.textContent=t;m.className=c||''}
 function fitBox(im,x,y,w,h,cover){const r=cover?Math.max(w/im.width,h/im.height):Math.min(w/im.width,h/im.height),dw=im.width*r,dh=im.height*r;return[x+(w-dw)/2,y+(h-dh)/2,dw,dh]}
-function wrap(ctx,t,mw){const out=[];for(const para of String(t).split('\n')){let l='';for(const ch of para){if(l&&ctx.measureText(l+ch).width>mw){out.push(l.trimEnd());l=ch===' '?'':ch}else l+=ch}out.push(l)}return out}
+function wrap(ctx,t,mw){const out=[];
+ for(const para of String(t).split('\n')){let l='';
+  for(const word of para.split(' ')){
+   const tryL=l?l+' '+word:word;
+   if(ctx.measureText(tryL).width<=mw){l=tryL;continue}
+   if(l){out.push(l);l=''}
+   if(ctx.measureText(word).width<=mw){l=word;continue}
+   for(const ch of word){if(l&&ctx.measureText(l+ch).width>mw){out.push(l);l=ch}else l+=ch}}
+  out.push(l)}
+ return out}
 function textBlock(ctx,T,x,y,w,h,title,body,vmid){
  const F=fo();let s=1,L;
  for(;s>=0.4;s-=0.05){const ts=Math.round(48*s),bs=Math.round(32*s);L={ts,bs};
@@ -97,32 +114,35 @@ function centerText(ctx,txt,cx,y,maxW,size,weight,color,maxLines){
  for(;s>=24;s-=4){ctx.font=`${weight} ${s}px ${F}`;ls=wrap(ctx,txt,maxW);if(ls.length<=maxLines)break}
  ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='top';
  ls.forEach((t,i)=>ctx.fillText(t,cx,y+i*s*1.3));ctx.textAlign='left';return ls.length*s*1.3}
-function drawPage(ctx,i){
+function drawPage(ctx,i,sc=1){
  const T=th(),n=photos.length;ctx.clearRect(0,0,W,H);ctx.fillStyle=T.bg;ctx.fillRect(0,0,W,H);
  if(i===0){ // 표지
   const p=photos[coverIdx],has=!!p;
   if(has){ctx.drawImage(p.c,...fitBox(p.c,0,0,W,H,true));ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H)}
   const ink=has?'#FFFFFF':T.ink,ac=has?'#F3E3C0':T.ac;
-  const h1=centerText(ctx,$('#ct').value||'제목을 입력하세요',W/2,210,1060,92,'700',ink,2);
-  centerText(ctx,$('#cs').value,W/2,210+h1+30,1060,40,'400',ac,2);
-  centerText(ctx,$('#cn').value,W/2,H-110,1060,32,'400',ink,1);return}
+  const f=Math.min(1,W/1100),mw=W-220,y0=Math.round(H*.29);
+  const h1=centerText(ctx,$('#ct').value||'제목을 입력하세요',W/2,y0,mw,Math.round(92*f),'700',ink,2);
+  centerText(ctx,$('#cs').value,W/2,y0+h1+30,mw,Math.max(26,Math.round(40*f)),'400',ac,2);
+  centerText(ctx,$('#cn').value,W/2,H-Math.round(H*.153),mw,Math.max(26,Math.round(32*f)),'400',ink,1);return}
  if(i===n+1){ // 마무리
-  const h1=centerText(ctx,$('#ce').value||'고맙습니다',W/2,270,1060,72,'700',T.ac,2);
-  centerText(ctx,'AI로 다시 만나는 나의 추억',W/2,270+h1+30,1060,28,'400',T.ink,1);return}
+  const f=Math.min(1,W/1100),mw=W-220,y0=Math.round(H*.375);
+  const h1=centerText(ctx,$('#ce').value||'고맙습니다',W/2,y0,mw,Math.round(72*f),'700',T.ac,2);
+  centerText(ctx,'AI로 다시 만나는 나의 추억',W/2,y0+h1+30,mw,Math.max(26,Math.round(28*f)),'400',T.ink,1);return}
  const p=photos[i-1],im=p.c,title=p.title.trim(),body=p.text.trim(),has=title||body;
- let pos=p.pos;if(pos==='auto')pos=im.width/im.height>=1.6?'below':'right';
+ const land=W>H;let pos=p.pos;if(!land)pos='below';else if(pos==='auto')pos=im.width/im.height>=1.6?'below':'right';
  let pb,tb;
  if(!has)pb=[60,50,W-120,H-100];
+ else if(!land){const ph=Math.round(H*.56);pb=[50,50,W-100,ph];tb=[70,ph+100,W-140,H-ph-150]}
  else if(pos==='right'){pb=[60,60,680,600];tb=[790,60,430,600]}
  else{pb=[60,40,1160,415];tb=[100,480,1080,205]}
  const [dx,dy,dw,dh]=fitBox(im,...pb);
- ctx.save();ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=18;ctx.shadowOffsetY=4;ctx.fillStyle='#fff';ctx.fillRect(dx-12,dy-12,dw+24,dh+24);ctx.restore();
+ ctx.save();ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=18*sc;ctx.shadowOffsetY=4*sc;ctx.fillStyle='#fff';ctx.fillRect(dx-12,dy-12,dw+24,dh+24);ctx.restore();
  ctx.drawImage(im,dx,dy,dw,dh);
  if(has)textBlock(ctx,T,...tb,title,body,pos==='right');
  ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font=`400 22px ${fo()}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(`${i}번`,W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
 async function fontsReady(){const f=fo();try{await Promise.race([Promise.all(['400','700'].map(w=>document.fonts.load(`${w} 40px ${f}`,'가나다'))),new Promise(r=>setTimeout(r,3000))])}catch(e){}}
 let rt=0;
-function render(){clearTimeout(rt);rt=setTimeout(async()=>{await fontsReady();cur=Math.min(cur,total()-1);drawPage($('#cv').getContext('2d'),cur);$('#pg').textContent=`${cur+1} / ${total()}쪽`;$('#prev').disabled=cur===0;$('#next').disabled=cur>=total()-1},30)}
+function render(){clearTimeout(rt);rt=setTimeout(async()=>{await fontsReady();cur=Math.min(cur,total()-1);drawPage($('#cv').getContext('2d'),cur,1);$('#pg').textContent=`${cur+1} / ${total()}쪽`;$('#prev').disabled=cur===0;$('#next').disabled=cur>=total()-1},30)}
 function refreshCover(){const s=$('#cp');s.innerHTML='';s.add(new Option('사진 없이 색 배경',-1));photos.forEach((_,i)=>s.add(new Option(`${i+1}번 사진`,i)));
  if(coverIdx>=photos.length)coverIdx=photos.length-1;s.value=coverIdx}
 function thumb(c){const t=document.createElement('canvas');t.width=160;t.height=120;const x=t.getContext('2d');x.fillStyle='#eee';x.fillRect(0,0,160,120);x.drawImage(c,...fitBox(c,0,0,160,120));return t}
@@ -149,34 +169,69 @@ $('#file').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(
  if(bad.length)msg(`열 수 없는 사진이 있습니다: ${bad.join(', ')} — JPG 또는 PNG로 저장한 사진을 올려 주세요. (아이폰 HEIC 등)`,'err');
  else msg(`사진 ${fs.length}장을 불러왔습니다.`,'ok')};
 ['ct','cs','cn','ce','th','fo'].forEach(id=>$('#'+id).addEventListener('input',()=>{cur=id==='ce'?total()-1:id==='th'||id==='fo'?cur:0;render()}));
+$('#fm').onchange=()=>{applyFormat();render()};
 $('#cp').onchange=()=>{coverIdx=+$('#cp').value;cur=0;render()};
 $('#prev').onclick=()=>{cur--;render()};$('#next').onclick=()=>{cur++;render()};
 async function makePDF(){
- await fontsReady();const c=document.createElement('canvas');c.width=W;c.height=H;const ctx=c.getContext('2d'),pages=[];
- for(let i=0;i<total();i++){drawPage(ctx,i);const b=atob(c.toDataURL('image/jpeg',.92).split(',')[1]),u=new Uint8Array(b.length);for(let k=0;k<b.length;k++)u[k]=b.charCodeAt(k);pages.push(u)}
+ await fontsReady();const PW=Math.round(W*S),PH=Math.round(H*S),PtW=Math.round(W*.75),PtH=Math.round(H*.75);const c=document.createElement('canvas');c.width=PW;c.height=PH;const ctx=c.getContext('2d'),pages=[];ctx.setTransform(S,0,0,S,0,0);
+ for(let i=0;i<total();i++){drawPage(ctx,i,S);const b=atob(c.toDataURL('image/jpeg',.92).split(',')[1]),u=new Uint8Array(b.length);for(let k=0;k<b.length;k++)u[k]=b.charCodeAt(k);pages.push(u)}
  const enc=new TextEncoder(),parts=[],offs=[];let len=0;
  const add=x=>{const u=typeof x==='string'?enc.encode(x):x;parts.push(u);len+=u.length};
  const obj=(n,body)=>{offs[n]=len;add(`${n} 0 obj\n${body}\nendobj\n`)};
  const N=pages.length;add('%PDF-1.4\n');
  obj(1,'<</Type/Catalog/Pages 2 0 R>>');
  obj(2,`<</Type/Pages/Count ${N}/Kids[${pages.map((_,k)=>`${3+3*k} 0 R`).join(' ')}]>>`);
- pages.forEach((u,k)=>{const p=3+3*k,cs='q 960 0 0 540 0 0 cm /Im Do Q';
-  obj(p,`<</Type/Page/Parent 2 0 R/MediaBox[0 0 960 540]/Contents ${p+1} 0 R/Resources<</XObject<</Im ${p+2} 0 R>>>>>>`);
+ pages.forEach((u,k)=>{const p=3+3*k,cs=`q ${PtW} 0 0 ${PtH} 0 0 cm /Im Do Q`;
+  obj(p,`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${PtW} ${PtH}]/Contents ${p+1} 0 R/Resources<</XObject<</Im ${p+2} 0 R>>>>>>`);
   obj(p+1,`<</Length ${cs.length}>>\nstream\n${cs}\nendstream`);
-  offs[p+2]=len;add(`${p+2} 0 obj\n<</Type/XObject/Subtype/Image/Width ${W}/Height ${H}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${u.length}>>\nstream\n`);add(u);add('\nendstream\nendobj\n')});
+  offs[p+2]=len;add(`${p+2} 0 obj\n<</Type/XObject/Subtype/Image/Width ${PW}/Height ${PH}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${u.length}>>\nstream\n`);add(u);add('\nendstream\nendobj\n')});
  const xr=len,M=3*N+3;let x=`xref\n0 ${M}\n0000000000 65535 f \n`;
  for(let n=1;n<M;n++)x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
  add(x+`trailer\n<</Size ${M}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`);
  return new Blob(parts,{type:'application/pdf'})}
 $('#save').onclick=async()=>{
  if(!photos.length){msg('먼저 1번에서 사진을 1장 이상 올려 주세요.','err');return}
- $('#save').disabled=true;msg('PDF를 만드는 중입니다…');
+ setBusy(true);msg('PDF를 만드는 중입니다…');
  try{const blob=await makePDF(),a=document.createElement('a'),nm=($('#ct').value||'앨범').replace(/[\\\/:*?"<>|]/g,'');
-  a.href=URL.createObjectURL(blob);a.download=nm+'.pdf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
-  msg(`저장했습니다: ${nm}.pdf (${total()}쪽). 다운로드 폴더에서 열어 확인하세요.`,'ok')}
+  a.href=URL.createObjectURL(blob);a.download=nm+'_'+fmtTag()+'.pdf';document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  msg(`저장했습니다: ${nm}_${fmtTag()}.pdf (${total()}쪽). 다운로드 폴더에서 열어 확인하세요.`,'ok')}
  catch(e){msg('PDF를 만들지 못했습니다. 사진 수를 줄여 다시 시도해 주세요.','err')}
- $('#save').disabled=false};
-refreshCover();render();
+ setBusy(false)};
+
+const setBusy=b=>['#save','#savePng','#savePngAll'].forEach(k=>$(k).disabled=b);
+const CRCT=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc32=u=>{let c=0xFFFFFFFF;for(let i=0;i<u.length;i++)c=CRCT[(c^u[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0};
+function makeZip(files){
+ const enc=new TextEncoder(),parts=[],cd=[];let off=0;
+ files.forEach(f=>{const nm=enc.encode(f.name),crc=crc32(f.data),sz=f.data.length;
+  const lh=new DataView(new ArrayBuffer(30));lh.setUint32(0,0x04034b50,true);lh.setUint16(4,20,true);lh.setUint16(6,0x0800,true);lh.setUint16(12,0x21,true);lh.setUint32(14,crc,true);lh.setUint32(18,sz,true);lh.setUint32(22,sz,true);lh.setUint16(26,nm.length,true);
+  parts.push(new Uint8Array(lh.buffer),nm,f.data);
+  const ch=new DataView(new ArrayBuffer(46));ch.setUint32(0,0x02014b50,true);ch.setUint16(4,20,true);ch.setUint16(6,20,true);ch.setUint16(8,0x0800,true);ch.setUint16(14,0x21,true);ch.setUint32(16,crc,true);ch.setUint32(20,sz,true);ch.setUint32(24,sz,true);ch.setUint16(28,nm.length,true);ch.setUint32(42,off,true);
+  cd.push(new Uint8Array(ch.buffer),nm);off+=30+nm.length+sz});
+ const cl=cd.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+ e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cl,true);e.setUint32(16,off,true);
+ return new Blob([...parts,...cd,new Uint8Array(e.buffer)],{type:'application/zip'})}
+const canvasBytes=c=>new Promise((ok,no)=>c.toBlob(async b=>b?ok(new Uint8Array(await b.arrayBuffer())):no(new Error('png')),'image/png'));
+const baseName=()=>($('#ct').value||'앨범').replace(/[\\\/:*?"<>|]/g,'').trim()||'앨범';
+const pageLabel=i=>i===0?'표지':i===photos.length+1?'마무리':`${i}번사진`;
+function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+async function pageCanvas(i){const c=document.createElement('canvas');c.width=Math.round(W*S);c.height=Math.round(H*S);const x=c.getContext('2d');x.setTransform(S,0,0,S,0,0);drawPage(x,i,S);return c}
+$('#savePng').onclick=async()=>{
+ if(!photos.length){msg('먼저 1번에서 사진을 1장 이상 올려 주세요.','err');return}
+ setBusy(true);msg('PNG를 만드는 중입니다…');
+ try{await fontsReady();const b=await canvasBytes(await pageCanvas(cur)),nm=`${baseName()}_${fmtTag()}_${String(cur+1).padStart(2,'0')}_${pageLabel(cur)}.png`;
+  saveBlob(new Blob([b],{type:'image/png'}),nm);msg(`저장했습니다: ${nm}`,'ok')}
+ catch(e){msg('PNG를 만들지 못했습니다. 다시 시도해 주세요.','err')}
+ setBusy(false)};
+$('#savePngAll').onclick=async()=>{
+ if(!photos.length){msg('먼저 1번에서 사진을 1장 이상 올려 주세요.','err');return}
+ setBusy(true);msg('전체 쪽을 PNG로 만드는 중입니다…');
+ try{await fontsReady();const files=[],bn=baseName();
+  for(let i=0;i<total();i++){files.push({name:`${bn}_${fmtTag()}_${String(i+1).padStart(2,'0')}_${pageLabel(i)}.png`,data:await canvasBytes(await pageCanvas(i))});msg(`PNG 만드는 중… ${i+1} / ${total()}`)}
+  saveBlob(makeZip(files),bn+'_'+fmtTag()+'_PNG.zip');msg(`저장했습니다: ${bn}_${fmtTag()}_PNG.zip (PNG ${total()}장이 압축되어 있습니다. 압축을 풀어서 사용하세요.)`,'ok')}
+ catch(e){msg('PNG를 만들지 못했습니다. 사진 수를 줄여 다시 시도해 주세요.','err')}
+ setBusy(false)};
+applyFormat();refreshCover();render();
 </script>
 </body>
 </html>
