@@ -3,42 +3,60 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>나의 추억 앨범 만들기</title>
+<title>나의 추억 앨범 만들기 | AI Insight Lab 정한열</title>
+<meta name="description" content="사진을 올리면 PDF·PNG 앨범이 완성되는 무료 앱. 대림대학교 정한열 교수(AI Insight Lab) 제작.">
 <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#f4f1ea;color:#2b2623;font:18px/1.5 "Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif}
-header{padding:20px 24px 8px}
-h1{margin:0 0 6px;font-size:28px}
-.note{margin:0;color:#6b5f58;font-size:16px}
+body{margin:0;background:#F2FBF9;color:#1A2332;font:18px/1.5 "Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+header{padding:20px 24px 10px;border-top:6px solid;border-image:linear-gradient(90deg,#078F82,#FF9F1C) 1;background:#fff}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.top svg{flex-shrink:0}
+h1{margin:0;font-size:28px}
+.free{display:inline-block;background:#FF9F1C;color:#0D1B2A;font-size:14px;font-weight:700;padding:3px 12px;border-radius:20px}
+.note{margin:0;color:#4A6572;font-size:16px}
+.by{margin:4px 0 0;font-size:15px;color:#4A6572}
+.by a{color:#067A70;text-decoration:none;font-weight:700}
 .wrap{display:grid;gap:20px;padding:16px 24px 40px;max-width:1400px;margin:0 auto}
 @media(min-width:1000px){.wrap{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.pv{position:sticky;top:12px;align-self:start}}
-section{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;box-shadow:0 1px 6px rgba(0,0,0,.08)}
+section{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:16px;border:1px solid #D3EEE9;box-shadow:0 2px 10px rgba(7,143,130,.10)}
 h2{margin:0 0 10px;font-size:22px}
-h2 b{display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;border-radius:50%;background:#3e6f5b;color:#fff;margin-right:8px;font-size:19px}
-label.pick,button{font:inherit;font-size:19px;padding:12px 18px;border-radius:10px;border:0;cursor:pointer;background:#3e6f5b;color:#fff;font-weight:700}
-button.sub{background:#e8e3d8;color:#2b2623}
+h2 b{display:inline-block;width:34px;height:34px;line-height:34px;text-align:center;border-radius:50%;background:linear-gradient(135deg,#067A70,#078F82);color:#fff;margin-right:8px;font-size:19px}
+label.pick,button{font:inherit;font-size:19px;padding:12px 18px;border-radius:10px;border:0;cursor:pointer;background:#067A70;color:#fff;font-weight:700}
+button.sub{background:#DDF3EF;color:#0D1B2A}
 button:disabled{opacity:.5;cursor:not-allowed}
 label.pick{display:inline-block}
 input[type=file]{display:none}
-input[type=text],textarea,select{width:100%;font:inherit;padding:10px 12px;border:1.5px solid #cfc8bb;border-radius:8px;background:#fff;margin:4px 0}
-.card{border:1.5px solid #e2dccf;border-radius:12px;padding:12px;margin-top:12px}
-.card .no{font-weight:700;color:#8a5a44}
+input[type=text],textarea,select{width:100%;font:inherit;padding:10px 12px;border:1.5px solid #B4D9D3;border-radius:8px;background:#fff;margin:4px 0}
+.card{border:1.5px solid #CBEAE5;border-radius:12px;padding:12px;margin-top:12px}
+.card .no{font-weight:700;color:#B45309}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:6px 0}
 .row select{flex:1;min-width:140px;width:auto}
 .row button{padding:8px 12px;font-size:16px}
-.fld{display:grid;gap:2px;margin:8px 0}.fld span{font-size:16px;color:#6b5f58}
+.fld{display:grid;gap:2px;margin:8px 0}.fld span{font-size:16px;color:#4A6572}
 canvas#cv{margin:0 auto;width:100%;height:auto;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.2);background:#fff;display:block}
 .nav{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:12px 0}
-#save{width:100%}.saves{display:grid;gap:8px;grid-template-columns:1fr 1fr}.saves #save{grid-column:1/-1}
+#save{width:100%;background:#FF9F1C;color:#0D1B2A}.saves{display:grid;gap:8px;grid-template-columns:1fr 1fr}.saves #save{grid-column:1/-1}
 #msg{min-height:28px;font-weight:700;margin-top:10px}
-#msg.err{color:#b3261e}#msg.ok{color:#2e6b3e}
+#msg.err{color:#b3261e}#msg.ok{color:#067A70}
+footer{background:#0d1b2a;color:#c9d3df;padding:28px 24px;font-size:15px;line-height:1.7}
+.fin{max-width:1400px;margin:0 auto;display:grid;gap:20px;grid-template-columns:auto 1fr;align-items:center}
+.fin strong{color:#fff;font-size:17px}
+.fin a{color:#0abfae;text-decoration:none;font-weight:700}
+.fin .lic{display:inline-block;margin-top:8px;border:1px solid #FF9F1C;color:#FF9F1C;border-radius:6px;padding:2px 10px;font-size:13px;font-weight:700}
+.fin small{display:block;margin-top:8px;color:#8c9bb0;font-size:13px}
+@media(max-width:600px){.fin{grid-template-columns:1fr;justify-items:center;text-align:center}}
 </style>
 </head>
 <body>
 <header>
+<div class="top">
+<svg width="52" height="52" viewBox="0 0 64 64" role="img" aria-label="AI Insight Lab 로고"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1a2e45"/><stop offset="1" stop-color="#0d1b2a"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#lg)"/><rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#0abfae" stroke-width="2"/><text x="32" y="30" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="22" fill="#fff">AI</text><text x="32" y="48" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="11" letter-spacing="1" fill="#0abfae">INSIGHT</text></svg>
 <h1>나의 추억 앨범 만들기</h1>
+<span class="free">🎁 무료 앱</span>
+</div>
 <p class="note">사진은 이 컴퓨터 밖으로 나가지 않습니다. 새로고침하면 작업이 사라지니, 끝나면 꼭 PDF로 저장하세요.</p>
+<p class="by">누구나 쉽게 앨범을 만들 수 있도록 <a href="https://token-web.github.io/aiinsightlab/" target="_blank" rel="noopener">정한열 교수(AI Insight Lab)</a>가 만든 무료 앱입니다.</p>
 </header>
 <div class="wrap">
 <div>
@@ -72,6 +90,21 @@ canvas#cv{margin:0 auto;width:100%;height:auto;border-radius:10px;box-shadow:0 2
 </section>
 </div>
 </div>
+<footer>
+<div class="fin">
+<svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="AI Insight Lab 로고"><rect width="64" height="64" rx="14" fill="#1a2e45"/><rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#0abfae" stroke-width="2"/><text x="32" y="30" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="22" fill="#fff">AI</text><text x="32" y="48" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="11" letter-spacing="1" fill="#0abfae">INSIGHT</text></svg>
+<div>
+<strong>나의 추억 앨범 만들기 · 무료 제공 앱</strong><br>
+제작: 정한열 교수 · 대림대학교 교육혁신센터 (AI Insight Lab)<br>
+<a href="https://token-web.github.io/aiinsightlab/" target="_blank" rel="noopener">프로필 사이트</a> ·
+<a href="https://blog.naver.com/patriot_daelim" target="_blank" rel="noopener">네이버 블로그</a> ·
+<a href="https://youtube.com/@aiinsightlabkr" target="_blank" rel="noopener">YouTube</a> ·
+<a href="https://www.linkedin.com/in/hanyeol-jeong" target="_blank" rel="noopener">LinkedIn</a><br>
+<span class="lic">FREE · 누구나 무료로 사용</span>
+<small>© 2026 Hanyeol Jeong. 올리신 사진은 서버로 전송되지 않고 내 기기 안에서만 처리됩니다.</small>
+</div>
+</div>
+</footer>
 <script>
 const $=s=>document.querySelector(s);
 const FORMATS=[{n:'가로형 16:9 (발표·TV·유튜브)',w:1280,h:720,s:1.5,t:'16x9'},{n:'세로형 9:16 (스토리·릴스·휴대폰)',w:720,h:1280,s:1.5,t:'9x16'},{n:'인스타 피드 4:5 (1080×1350)',w:1080,h:1350,s:1,t:'4x5'}];
