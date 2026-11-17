@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>나의 추억 앨범 만들기 | AI Insight Lab 정한열</title>
 <meta name="description" content="사진을 올리면 PDF·PNG 앨범이 완성되는 무료 앱. 대림대학교 정한열 교수(AI Insight Lab) 제작.">
-<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<link rel="preload" href="fonts/noto-sans-kr-400-core.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/noto-sans-kr-700-core.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#F2FBF9;color:#1A2332;font:18px/1.5 "Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif}
@@ -112,7 +114,7 @@ const $=s=>document.querySelector(s);
 const FORMATS=[{n:'가로형 16:9 (발표·TV·유튜브)',w:1280,h:720,s:1.5,t:'16x9'},{n:'세로형 9:16 (스토리·릴스·휴대폰)',w:720,h:1280,s:1.5,t:'9x16'},{n:'인스타 피드 4:5 (1080×1350)',w:1080,h:1350,s:1,t:'4x5'}];
 let W=1280,H=720,S=1.5;
 const THEMES=[{n:'포근한 아이보리',bg:'#F7F3EC',ink:'#2B2623',ac:'#8A5A44'},{n:'맑은 하늘',bg:'#EEF3F8',ink:'#1F2A37',ac:'#3A6EA5'},{n:'짙은 초록',bg:'#2F4A3F',ink:'#F4F1EA',ac:'#E3C58F'}];
-const FONTS=[{n:'고딕',f:'"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'명조',f:'"Nanum Myeongjo","Batang",serif'},{n:'손글씨',f:'Gaegu,"Malgun Gothic",sans-serif'}];
+const FONTS=[{n:'고딕',f:'"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'명조',f:'"Myeongjo KR","Batang",serif'},{n:'손글씨',f:'Gaegu,"Malgun Gothic",sans-serif'}];
 let photos=[],cur=0,coverIdx=-1,pend=0;
 THEMES.forEach((t,i)=>$('#th').add(new Option(t.n,i)));
 FONTS.forEach((t,i)=>$('#fo').add(new Option(t.n,i)));
@@ -175,7 +177,7 @@ function drawPage(ctx,i,sc=1){
  ctx.drawImage(im,dx,dy,dw,dh);
  if(has)textBlock(ctx,T,...tb,title,body,pos==='right');
  ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font=`400 22px ${fo()}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(`${i}번`,W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
-async function fontsReady(){const f=fo();try{await Promise.race([Promise.all(['400','700'].map(w=>document.fonts.load(`${w} 40px ${f}`,'가나다'))),new Promise(r=>setTimeout(r,3000))])}catch(e){}}
+async function fontsReady(){const f=fo();const tx=Array.from(document.querySelectorAll('input[type=text],textarea')).map(e=>e.value).join('')+'제목을 입력하세요고맙습니다번쪽0123456789';try{await Promise.race([Promise.all(['400','700'].map(w=>document.fonts.load(`${w} 40px ${f}`,tx))),new Promise(r=>setTimeout(r,10000))])}catch(e){}}
 let rt=0;
 function render(){clearTimeout(rt);rt=setTimeout(async()=>{await fontsReady();cur=Math.min(cur,total()-1);drawPage($('#cv').getContext('2d'),cur,1);$('#pg').textContent=`${cur+1} / ${total()}쪽`;$('#prev').disabled=cur===0;$('#next').disabled=cur>=total()-1},30)}
 function refreshCover(){const s=$('#cp');s.innerHTML='';s.add(new Option('사진 없이 색 배경',-1));photos.forEach((_,i)=>s.add(new Option(`${i+1}번 사진`,i)));
