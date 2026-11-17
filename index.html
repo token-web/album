@@ -114,7 +114,7 @@ const $=s=>document.querySelector(s);
 const FORMATS=[{n:'가로형 16:9 (발표·TV·유튜브)',w:1280,h:720,s:1.5,t:'16x9'},{n:'세로형 9:16 (스토리·릴스·휴대폰)',w:720,h:1280,s:1.5,t:'9x16'},{n:'인스타 피드 4:5 (1080×1350)',w:1080,h:1350,s:1,t:'4x5'}];
 let W=1280,H=720,S=1.5;
 const THEMES=[{n:'포근한 아이보리',bg:'#F7F3EC',ink:'#2B2623',ac:'#8A5A44'},{n:'맑은 하늘',bg:'#EEF3F8',ink:'#1F2A37',ac:'#3A6EA5'},{n:'짙은 초록',bg:'#2F4A3F',ink:'#F4F1EA',ac:'#E3C58F'}];
-const FONTS=[{n:'고딕',f:'"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'명조',f:'"Myeongjo KR","Batang",serif'},{n:'손글씨',f:'Gaegu,"Malgun Gothic",sans-serif'}];
+const FONTS=[{n:'고딕',f:'"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'명조',f:'"Myeongjo KR","Batang",serif'},{n:'둥근 고딕',f:'"Gowun Dodum","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'손글씨 (개구)',f:'Gaegu,"Noto Sans KR","Malgun Gothic",sans-serif'},{n:'손글씨 (감자꽃)',f:'"Gamja Flower","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'펜글씨',f:'"Pen KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'붓글씨',f:'"Brush KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'굵은 제목체',f:'"Do Hyeon","Noto Sans KR","Malgun Gothic",sans-serif'}];
 let photos=[],cur=0,coverIdx=-1,pend=0;
 THEMES.forEach((t,i)=>$('#th').add(new Option(t.n,i)));
 FONTS.forEach((t,i)=>$('#fo').add(new Option(t.n,i)));
