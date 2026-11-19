@@ -49,6 +49,33 @@ footer{background:#0d1b2a;color:#c9d3df;padding:28px 24px;font-size:15px;line-he
 .fin .lic{display:inline-block;margin-top:8px;border:1px solid #FF9F1C;color:#FF9F1C;border-radius:6px;padding:2px 10px;font-size:13px;font-weight:700}
 .fin small{display:block;margin-top:8px;color:#8c9bb0;font-size:13px}
 @media(max-width:600px){.fin{grid-template-columns:1fr;justify-items:center;text-align:center}}
+
+[hidden]{display:none!important}
+.sw{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px;margin:6px 0}
+button.swb{display:grid;gap:4px;padding:6px;border:3px solid transparent;border-radius:12px;background:#fff;color:#1A2332;font-size:14px;font-weight:700;text-align:center;box-shadow:0 0 0 1.5px #CBEAE5}
+button.swb.on{border-color:#067A70;box-shadow:0 0 0 1.5px #067A70,0 2px 8px rgba(7,143,130,.25)}
+button.swb .swp{position:relative;display:block;border-radius:8px;padding:10px 4px 16px;font-size:20px;font-weight:700;line-height:1.1;border:1px solid rgba(0,0,0,.12)}
+button.swb .swp i{font-style:normal;font-size:24px}
+button.swb .swp em{position:absolute;left:50%;bottom:6px;width:34px;height:4px;margin-left:-17px;border-radius:2px}
+button.swb .swl{display:block;font-size:14px;line-height:1.25}
+.tocbox{border:1.5px dashed #B4D9D3;border-radius:12px;padding:10px 14px;margin:10px 0}
+.chk{display:flex;gap:10px;align-items:center;font-size:18px;font-weight:700;cursor:pointer}
+.chk input{width:22px;height:22px;accent-color:#067A70}
+.aiwrap{max-width:1400px;margin:0 auto;padding:0 24px 40px}
+#aihelp summary{cursor:pointer;font-size:22px;font-weight:700;list-style:none}
+#aihelp summary::-webkit-details-marker{display:none}
+#aihelp summary small{display:block;font-size:15px;font-weight:400;color:#4A6572;margin-top:4px}
+.warn{background:#FFF7E0;border:1px solid #FFE3A0;border-radius:10px;padding:10px 14px;font-size:15px;color:#7a4d00;margin:12px 0}
+.aigrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.aic textarea{font-size:15px;line-height:1.55;background:#F7FBFA;resize:vertical}
+.aih{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-size:13px;font-weight:700;color:#067A70;background:#DDF3EF;border-radius:20px;padding:2px 10px}.chip.g{color:#4A6572;background:#EEF1F3}
+#ai_list{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px}
+#ai_sites label{display:flex;align-items:center;gap:6px;font-weight:700;margin-right:12px;cursor:pointer}
+#ai_sites input{width:20px;height:20px;accent-color:#067A70}
+#aimsg{min-height:28px;font-weight:700;margin-top:10px}#aimsg.err{color:#b3261e}#aimsg.ok{color:#067A70}
+button.op{background:#FF9F1C;color:#0D1B2A}
+.row button.op,.row button.cp{padding:10px 14px;font-size:16px}
 </style>
 </head>
 <body>
@@ -80,8 +107,12 @@ footer{background:#0d1b2a;color:#c9d3df;padding:28px 24px;font-size:15px;line-he
 <div class="fld"><span>마무리 문구</span><input type="text" id="ce" maxlength="40" value="우리 집 이야기, 이제 시작"></div>
 <div class="fld"><span>화면 비율 (저장되는 모양)</span><select id="fm"></select></div>
 <p class="note">세로형(9:16, 4:5)에서는 글이 항상 사진 아래에 놓입니다.</p>
-<div class="fld"><span>색 분위기</span><select id="th"></select></div>
+<div class="fld"><span>색 분위기 (전자책 읽기 색을 포함한 10가지)</span><div class="sw" id="swatches" role="radiogroup" aria-label="색 분위기"></div><select id="th" hidden aria-hidden="true"></select></div>
 <div class="fld"><span>글꼴</span><select id="fo"></select></div>
+<div class="tocbox"><label class="chk"><input type="checkbox" id="toc"> 목차 쪽 넣기 (표지 바로 뒤)</label>
+<p class="note">사진 제목을 모아 목차 쪽을 만듭니다. 제목이 없으면 “N번 사진”으로 나오고, PDF에는 책갈피(왼쪽 목차)와 목차 줄 클릭 이동이 함께 들어갑니다.</p>
+<div class="fld" id="tocopt" hidden><span>목차 제목</span><input type="text" id="toct" maxlength="10" value="목차"></div></div>
+<button type="button" class="sub" id="ai_go">✨ AI에게 문구 도움 받기 ↓</button>
 </section>
 </div>
 <div class="pv">
@@ -94,6 +125,23 @@ footer{background:#0d1b2a;color:#c9d3df;padding:28px 24px;font-size:15px;line-he
 </section>
 </div>
 </div>
+<div class="aiwrap"><section id="aihelp"><details id="aid"><summary>✨ AI에게 글쓰기 도움 받기 <small>선택 사항 · 이 앱에는 AI가 들어 있지 않습니다. 질문을 복사해 AI 사이트에서 답을 받고, 그 답을 붙여넣으면 칸이 채워집니다.</small></summary>
+<div class="warn">AI 창은 별도 사이트입니다. 실명·주소·전화번호는 빼고 쓰세요. 사진은 이 앱 밖으로 나가지 않으며 AI 창에도 올라가지 않습니다.</div>
+<h2><b>가</b>앨범 정보 적기</h2>
+<div class="aigrid">
+<div class="fld"><span>앨범 주제 (예: 어머니 칠순 가족여행)</span><input type="text" id="ai_topic" maxlength="60"></div>
+<div class="fld"><span>보는 사람 (예: 가족, 친구, 손주)</span><input type="text" id="ai_who" maxlength="30"></div>
+<div class="fld"><span>분위기</span><select id="ai_tone"><option>따뜻하고 담백하게</option><option>밝고 유쾌하게</option><option>차분하고 감성적으로</option><option>감동적으로</option><option>정중하고 격식 있게</option></select></div>
+</div>
+<h2><b>나</b>질문 복사하고 AI 열기</h2>
+<div class="fld"><span>열 AI 사이트 (질문이 복사됩니다. 열린 창에서 붙여넣기 Ctrl+V 하세요)</span><div class="row" id="ai_sites" role="radiogroup" aria-label="열 AI 사이트"><label><input type="radio" name="aisite" value="chatgpt" checked> ChatGPT</label><label><input type="radio" name="aisite" value="claude"> Claude</label><label><input type="radio" name="aisite" value="gemini"> Gemini</label></div></div>
+<div id="ai_list"></div>
+<h2><b>다</b>AI가 써 준 답 붙여넣기</h2>
+<p class="note">①·②·③번 질문의 답을 붙여넣고 [앨범에 채우기]를 누르면 제목·부제·마무리 문구와 사진별 제목·설명이 채워집니다.</p>
+<textarea id="ai_paste" rows="6" placeholder="여기에 AI가 써 준 답을 붙여넣으세요 (Ctrl+V)"></textarea>
+<div class="row"><button type="button" id="ai_fill">앨범에 채우기</button><button type="button" class="sub" id="ai_undo" disabled>방금 채운 것 되돌리기</button></div>
+<div id="aimsg" role="status" aria-live="polite"></div>
+</details></section></div>
 <footer>
 <div class="fin">
 <svg width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="AI Insight Lab 로고"><rect width="64" height="64" rx="14" fill="#1a2e45"/><rect x="1.5" y="1.5" width="61" height="61" rx="12.5" fill="none" stroke="#0abfae" stroke-width="2"/><text x="32" y="30" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="22" fill="#fff">AI</text><text x="32" y="48" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-weight="700" font-size="11" letter-spacing="1" fill="#0abfae">INSIGHT</text></svg>
@@ -113,7 +161,17 @@ footer{background:#0d1b2a;color:#c9d3df;padding:28px 24px;font-size:15px;line-he
 const $=s=>document.querySelector(s);
 const FORMATS=[{n:'가로형 16:9 (발표·TV·유튜브)',w:1280,h:720,s:1.5,t:'16x9'},{n:'세로형 9:16 (스토리·릴스·휴대폰)',w:720,h:1280,s:1.5,t:'9x16'},{n:'인스타 피드 4:5 (1080×1350)',w:1080,h:1350,s:1,t:'4x5'}];
 let W=1280,H=720,S=1.5;
-const THEMES=[{n:'포근한 아이보리',bg:'#F7F3EC',ink:'#2B2623',ac:'#8A5A44'},{n:'맑은 하늘',bg:'#EEF3F8',ink:'#1F2A37',ac:'#3A6EA5'},{n:'짙은 초록',bg:'#2F4A3F',ink:'#F4F1EA',ac:'#E3C58F'}];
+const THEMES=[
+{n:'포근한 아이보리',bg:'#F7F3EC',ink:'#2B2623',ac:'#8A5A44',ov:'rgba(43,38,35,.58)',ca:'#F3E3C0'},
+{n:'순백',bg:'#FFFFFF',ink:'#1F1F1F',ac:'#067A70',ov:'rgba(20,24,24,.56)',ca:'#BFEDE6'},
+{n:'세피아',bg:'#F4ECD8',ink:'#5B4636',ac:'#9A4F2B',ov:'rgba(60,40,28,.6)',ca:'#F0D9B0'},
+{n:'연회색',bg:'#E8E8EA',ink:'#2A2A2E',ac:'#44546A',ov:'rgba(30,32,38,.58)',ca:'#D5DCE6'},
+{n:'맑은 하늘',bg:'#EEF3F8',ink:'#1F2A37',ac:'#3A6EA5',ov:'rgba(20,34,52,.58)',ca:'#CFE3F7'},
+{n:'세이지 그린',bg:'#EAF3EE',ink:'#22332B',ac:'#2F6F51',ov:'rgba(24,46,36,.58)',ca:'#CDEBDC'},
+{n:'파스텔 핑크',bg:'#FCEFEF',ink:'#3A2E2E',ac:'#B03A58',ov:'rgba(58,34,38,.58)',ca:'#FAD6DE'},
+{n:'짙은 초록',bg:'#2F4A3F',ink:'#F4F1EA',ac:'#E3C58F',ov:'rgba(25,45,36,.6)',ca:'#F3E3C0'},
+{n:'네이비 골드',bg:'#14213D',ink:'#F5F1E6',ac:'#E0B04A',ov:'rgba(10,18,36,.62)',ca:'#F3D58A'},
+{n:'야간(차콜)',bg:'#16181D',ink:'#E8E6E1',ac:'#F2C57C',ov:'rgba(10,11,14,.62)',ca:'#F7D9A0'}];
 const FONTS=[{n:'고딕',f:'"Noto Sans KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'명조',f:'"Myeongjo KR","Batang",serif'},{n:'둥근 고딕',f:'"Gowun Dodum","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'손글씨 (개구)',f:'Gaegu,"Noto Sans KR","Malgun Gothic",sans-serif'},{n:'손글씨 (감자꽃)',f:'"Gamja Flower","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'펜글씨',f:'"Pen KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'붓글씨',f:'"Brush KR","Malgun Gothic","Apple SD Gothic Neo",sans-serif'},{n:'굵은 제목체',f:'"Do Hyeon","Noto Sans KR","Malgun Gothic",sans-serif'}];
 let photos=[],cur=0,coverIdx=-1,pend=0;
 THEMES.forEach((t,i)=>$('#th').add(new Option(t.n,i)));
@@ -121,7 +179,10 @@ FONTS.forEach((t,i)=>$('#fo').add(new Option(t.n,i)));
 FORMATS.forEach((t,i)=>$('#fm').add(new Option(t.n,i)));
 const fmtTag=()=>FORMATS[$('#fm').value].t;
 function applyFormat(){const f=FORMATS[$('#fm').value];W=f.w;H=f.h;S=f.s;const c=$('#cv');c.width=W;c.height=H;c.style.width=`min(100%,${Math.round(78*W/H)}vh)`}
-const total=()=>photos.length+2;
+let tocOn=false;
+const total=()=>photos.length+2+tocPages();
+const photoPage=i=>tocPages()+1+i;
+function pageInfo(i){const k=tocPages(),n=photos.length;if(i===0)return{t:'cover'};if(i<=k)return{t:'toc',j:i-1};if(i===n+k+1)return{t:'end'};return{t:'photo',idx:i-k-1}}
 const th=()=>THEMES[$('#th').value],fo=()=>FONTS[$('#fo').value].f;
 function msg(t,c){const m=$('#msg');m.textContent=t;m.className=c||''}
 function fitBox(im,x,y,w,h,cover){const r=cover?Math.max(w/im.width,h/im.height):Math.min(w/im.width,h/im.height),dw=im.width*r,dh=im.height*r;return[x+(w-dw)/2,y+(h-dh)/2,dw,dh]}
@@ -152,20 +213,21 @@ function centerText(ctx,txt,cx,y,maxW,size,weight,color,maxLines){
  ctx.fillStyle=color;ctx.textAlign='center';ctx.textBaseline='top';
  ls.forEach((t,i)=>ctx.fillText(t,cx,y+i*s*1.3));ctx.textAlign='left';return ls.length*s*1.3}
 function drawPage(ctx,i,sc=1){
- const T=th(),n=photos.length;ctx.clearRect(0,0,W,H);ctx.fillStyle=T.bg;ctx.fillRect(0,0,W,H);
+ const T=th(),n=photos.length,info=pageInfo(i);ctx.clearRect(0,0,W,H);ctx.fillStyle=T.bg;ctx.fillRect(0,0,W,H);
  if(i===0){ // 표지
   const p=photos[coverIdx],has=!!p;
-  if(has){ctx.drawImage(p.c,...fitBox(p.c,0,0,W,H,true));ctx.fillStyle='rgba(0,0,0,.5)';ctx.fillRect(0,0,W,H)}
-  const ink=has?'#FFFFFF':T.ink,ac=has?'#F3E3C0':T.ac;
+  if(has){ctx.drawImage(p.c,...fitBox(p.c,0,0,W,H,true));ctx.fillStyle=T.ov;ctx.fillRect(0,0,W,H)}
+  const ink=has?'#FFFFFF':T.ink,ac=has?T.ca:T.ac;
   const f=Math.min(1,W/1100),mw=W-220,y0=Math.round(H*.29);
   const h1=centerText(ctx,$('#ct').value||'제목을 입력하세요',W/2,y0,mw,Math.round(92*f),'700',ink,2);
   centerText(ctx,$('#cs').value,W/2,y0+h1+30,mw,Math.max(26,Math.round(40*f)),'400',ac,2);
   centerText(ctx,$('#cn').value,W/2,H-Math.round(H*.153),mw,Math.max(26,Math.round(32*f)),'400',ink,1);return}
- if(i===n+1){ // 마무리
+ if(info.t==='toc'){drawToc(ctx,T,info.j);return}
+ if(info.t==='end'){ // 마무리
   const f=Math.min(1,W/1100),mw=W-220,y0=Math.round(H*.375);
   const h1=centerText(ctx,$('#ce').value||'고맙습니다',W/2,y0,mw,Math.round(72*f),'700',T.ac,2);
   centerText(ctx,'AI로 다시 만나는 나의 추억',W/2,y0+h1+30,mw,Math.max(26,Math.round(28*f)),'400',T.ink,1);return}
- const p=photos[i-1],im=p.c,title=p.title.trim(),body=p.text.trim(),has=title||body;
+ const p=photos[info.idx],im=p.c,title=p.title.trim(),body=p.text.trim(),has=title||body;
  const land=W>H;let pos=p.pos;if(!land)pos='below';else if(pos==='auto')pos=im.width/im.height>=1.6?'below':'right';
  let pb,tb;
  if(!has)pb=[60,50,W-120,H-100];
@@ -176,10 +238,10 @@ function drawPage(ctx,i,sc=1){
  ctx.save();ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=18*sc;ctx.shadowOffsetY=4*sc;ctx.fillStyle='#fff';ctx.fillRect(dx-12,dy-12,dw+24,dh+24);ctx.restore();
  ctx.drawImage(im,dx,dy,dw,dh);
  if(has)textBlock(ctx,T,...tb,title,body,pos==='right');
- ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font=`400 22px ${fo()}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(`${i}번`,W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
+ ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font=`400 22px ${fo()}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(`${i+1}쪽`,W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
 async function fontsReady(){const f=fo();const tx=Array.from(document.querySelectorAll('input[type=text],textarea')).map(e=>e.value).join('')+'제목을 입력하세요고맙습니다번쪽0123456789';try{await Promise.race([Promise.all(['400','700'].map(w=>document.fonts.load(`${w} 40px ${f}`,tx))),new Promise(r=>setTimeout(r,10000))])}catch(e){}}
 let rt=0;
-function render(){clearTimeout(rt);rt=setTimeout(async()=>{await fontsReady();cur=Math.min(cur,total()-1);drawPage($('#cv').getContext('2d'),cur,1);$('#pg').textContent=`${cur+1} / ${total()}쪽`;$('#prev').disabled=cur===0;$('#next').disabled=cur>=total()-1},30)}
+function render(){clearTimeout(rt);rt=setTimeout(async()=>{await fontsReady();cur=Math.min(cur,total()-1);drawPage($('#cv').getContext('2d'),cur,1);$('#pg').textContent=`${cur+1} / ${total()}쪽`;$('#prev').disabled=cur===0;$('#next').disabled=cur>=total()-1;refreshAi()},30)}
 function refreshCover(){const s=$('#cp');s.innerHTML='';s.add(new Option('사진 없이 색 배경',-1));photos.forEach((_,i)=>s.add(new Option(`${i+1}번 사진`,i)));
  if(coverIdx>=photos.length)coverIdx=photos.length-1;s.value=coverIdx}
 function thumb(c){const t=document.createElement('canvas');t.width=160;t.height=120;const x=t.getContext('2d');x.fillStyle='#eee';x.fillRect(0,0,160,120);x.drawImage(c,...fitBox(c,0,0,160,120));return t}
@@ -188,13 +250,13 @@ function buildList(){const L=$('#list');L.innerHTML='';
   d.innerHTML=`<div class="no">${i+1}번 사진</div><div class="row"></div><input class="t" type="text" maxlength="30" placeholder="제목 (예: 아버지의 어린 시절)"><textarea class="b" rows="3" maxlength="240" placeholder="사진 설명 (3~4문장, 100자 안팎이 보기 좋아요)"></textarea><div class="row"><select class="s"><option value="auto">글 위치: 자동</option><option value="right">글 위치: 오른쪽</option><option value="below">글 위치: 아래</option></select><button class="sub u">▲ 위로</button><button class="sub dn">▼ 아래로</button><button class="sub x">삭제</button></div>`;
   d.querySelector('.row').append(thumb(p.c));
   const t=d.querySelector('.t'),b=d.querySelector('.b'),s=d.querySelector('.s');t.value=p.title;b.value=p.text;s.value=p.pos;
-  const go=()=>{cur=i+1;render()};
+  const go=()=>{cur=photoPage(i);render()};
   t.oninput=()=>{p.title=t.value;go()};b.oninput=()=>{p.text=b.value;go()};s.onchange=()=>{p.pos=s.value;go()};
   t.onfocus=b.onfocus=go;
   d.querySelector('.u').onclick=()=>mv(i,-1);d.querySelector('.dn').onclick=()=>mv(i,1);
   d.querySelector('.x').onclick=()=>{photos.splice(i,1);cur=Math.min(cur,total()-1);if(!photos.length)coverIdx=-1;refreshCover();buildList();render()};
   L.append(d)})}
-function mv(i,k){const j=i+k;if(j<0||j>=photos.length)return;[photos[i],photos[j]]=[photos[j],photos[i]];if(coverIdx===i)coverIdx=j;else if(coverIdx===j)coverIdx=i;cur=j+1;refreshCover();buildList();render()}
+function mv(i,k){const j=i+k;if(j<0||j>=photos.length)return;[photos[i],photos[j]]=[photos[j],photos[i]];if(coverIdx===i)coverIdx=j;else if(coverIdx===j)coverIdx=i;cur=photoPage(j);refreshCover();buildList();render()}
 function loadFile(f){return new Promise((ok,no)=>{const u=URL.createObjectURL(f),im=new Image();
  im.onload=()=>{const s=Math.min(1,1600/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c)};
  im.onerror=()=>{URL.revokeObjectURL(u);no(f.name)};im.src=u})}
@@ -202,27 +264,36 @@ $('#file').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(
  msg('사진을 불러오는 중입니다…');const bad=[];
  for(const f of fs){try{photos.push({c:await loadFile(f),title:'',text:'',pos:'auto'})}catch(x){bad.push(x)}}
  if(coverIdx<0&&photos.length)coverIdx=0;
- refreshCover();buildList();cur=photos.length?photos.length:0;render();
+ refreshCover();buildList();cur=photos.length?photoPage(photos.length-1):0;render();
  if(bad.length)msg(`열 수 없는 사진이 있습니다: ${bad.join(', ')} — JPG 또는 PNG로 저장한 사진을 올려 주세요. (아이폰 HEIC 등)`,'err');
  else msg(`사진 ${fs.length}장을 불러왔습니다.`,'ok')};
 ['ct','cs','cn','ce','th','fo'].forEach(id=>$('#'+id).addEventListener('input',()=>{cur=id==='ce'?total()-1:id==='th'||id==='fo'?cur:0;render()}));
 $('#fm').onchange=()=>{applyFormat();render()};
 $('#cp').onchange=()=>{coverIdx=+$('#cp').value;cur=0;render()};
 $('#prev').onclick=()=>{cur--;render()};$('#next').onclick=()=>{cur++;render()};
+const pdfHex=t=>{let h='FEFF';for(const ch of String(t)){const c=ch.codePointAt(0);if(c>0xFFFF){const v=c-0x10000;h+=(0xD800+(v>>10)).toString(16).padStart(4,'0')+(0xDC00+(v&0x3FF)).toString(16).padStart(4,'0')}else h+=c.toString(16).padStart(4,'0')}return'<'+h.toUpperCase()+'>'};
 async function makePDF(){
  await fontsReady();const PW=Math.round(W*S),PH=Math.round(H*S),PtW=Math.round(W*.75),PtH=Math.round(H*.75);const c=document.createElement('canvas');c.width=PW;c.height=PH;const ctx=c.getContext('2d'),pages=[];ctx.setTransform(S,0,0,S,0,0);
  for(let i=0;i<total();i++){drawPage(ctx,i,S);const b=atob(c.toDataURL('image/jpeg',.92).split(',')[1]),u=new Uint8Array(b.length);for(let k=0;k<b.length;k++)u[k]=b.charCodeAt(k);pages.push(u)}
  const enc=new TextEncoder(),parts=[],offs=[];let len=0;
  const add=x=>{const u=typeof x==='string'?enc.encode(x):x;parts.push(u);len+=u.length};
  const obj=(n,body)=>{offs[n]=len;add(`${n} 0 obj\n${body}\nendobj\n`)};
- const N=pages.length;add('%PDF-1.4\n');
- obj(1,'<</Type/Catalog/Pages 2 0 R>>');
- obj(2,`<</Type/Pages/Count ${N}/Kids[${pages.map((_,k)=>`${3+3*k} 0 R`).join(' ')}]>>`);
- pages.forEach((u,k)=>{const p=3+3*k,cs=`q ${PtW} 0 0 ${PtH} 0 0 cm /Im Do Q`;
-  obj(p,`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${PtW} ${PtH}]/Contents ${p+1} 0 R/Resources<</XObject<</Im ${p+2} 0 R>>>>>>`);
+ const N=pages.length,K=tocPages(),pobj=i=>3+3*i;let nx=3*N+3;const annots={},links=[];
+ if(K>0)for(let j=0;j<K;j++){annots[j+1]=[];tocRects(j).forEach(r=>{const num=nx++;links.push({num,r});annots[j+1].push(num)})}
+ const outl=[];if(K>0){outl.push({t:'표지',pg:0});outl.push({t:tocLabel(),pg:1});photos.forEach((p,i)=>outl.push({t:p.title.trim()||(i+1)+'번 사진',pg:photoPage(i)}));outl.push({t:'마무리',pg:N-1})}
+ const oroot=outl.length?nx++:0,onum=outl.map(()=>nx++),M=nx;
+ add('%PDF-1.4\n');
+ obj(1,`<</Type/Catalog/Pages 2 0 R${oroot?` /Outlines ${oroot} 0 R/PageMode/UseOutlines`:''}>>`);
+ obj(2,`<</Type/Pages/Count ${N}/Kids[${pages.map((_,k)=>`${pobj(k)} 0 R`).join(' ')}]>>`);
+ pages.forEach((u,k)=>{const p=pobj(k),cs=`q ${PtW} 0 0 ${PtH} 0 0 cm /Im Do Q`;
+  obj(p,`<</Type/Page/Parent 2 0 R/MediaBox[0 0 ${PtW} ${PtH}]/Contents ${p+1} 0 R/Resources<</XObject<</Im ${p+2} 0 R>>>>${annots[k]?`/Annots[${annots[k].map(n=>n+' 0 R').join(' ')}]`:''}>>`);
   obj(p+1,`<</Length ${cs.length}>>\nstream\n${cs}\nendstream`);
   offs[p+2]=len;add(`${p+2} 0 obj\n<</Type/XObject/Subtype/Image/Width ${PW}/Height ${PH}/ColorSpace/DeviceRGB/BitsPerComponent 8/Filter/DCTDecode/Length ${u.length}>>\nstream\n`);add(u);add('\nendstream\nendobj\n')});
- const xr=len,M=3*N+3;let x=`xref\n0 ${M}\n0000000000 65535 f \n`;
+ const kx=PtW/W,ky=PtH/H,f2=v=>Math.round(v*100)/100;
+ links.forEach(({num,r})=>obj(num,`<</Type/Annot/Subtype/Link/Rect[${f2(r.x*kx)} ${f2(PtH-(r.y+r.h)*ky)} ${f2((r.x+r.w)*kx)} ${f2(PtH-r.y*ky)}]/Border[0 0 0]/Dest[${pobj(r.pg)} 0 R/Fit]>>`));
+ if(oroot){obj(oroot,`<</Type/Outlines/First ${onum[0]} 0 R/Last ${onum[onum.length-1]} 0 R/Count ${outl.length}>>`);
+  outl.forEach((o,q)=>obj(onum[q],`<</Title ${pdfHex(o.t)}/Parent ${oroot} 0 R${q>0?`/Prev ${onum[q-1]} 0 R`:''}${q<outl.length-1?`/Next ${onum[q+1]} 0 R`:''}/Dest[${pobj(o.pg)} 0 R/Fit]>>`))}
+ const xr=len;let x=`xref\n0 ${M}\n0000000000 65535 f \n`;
  for(let n=1;n<M;n++)x+=String(offs[n]).padStart(10,'0')+' 00000 n \n';
  add(x+`trailer\n<</Size ${M}/Root 1 0 R>>\nstartxref\n${xr}\n%%EOF`);
  return new Blob(parts,{type:'application/pdf'})}
@@ -250,7 +321,7 @@ function makeZip(files){
  return new Blob([...parts,...cd,new Uint8Array(e.buffer)],{type:'application/zip'})}
 const canvasBytes=c=>new Promise((ok,no)=>c.toBlob(async b=>b?ok(new Uint8Array(await b.arrayBuffer())):no(new Error('png')),'image/png'));
 const baseName=()=>($('#ct').value||'앨범').replace(/[\\\/:*?"<>|]/g,'').trim()||'앨범';
-const pageLabel=i=>i===0?'표지':i===photos.length+1?'마무리':`${i}번사진`;
+const pageLabel=i=>{const f=pageInfo(i);return f.t==='cover'?'표지':f.t==='toc'?'목차'+(tocPages()>1?(f.j+1):''):f.t==='end'?'마무리':`${f.idx+1}번사진`};
 function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 async function pageCanvas(i){const c=document.createElement('canvas');c.width=Math.round(W*S);c.height=Math.round(H*S);const x=c.getContext('2d');x.setTransform(S,0,0,S,0,0);drawPage(x,i,S);return c}
 $('#savePng').onclick=async()=>{
@@ -268,6 +339,141 @@ $('#savePngAll').onclick=async()=>{
   saveBlob(makeZip(files),bn+'_'+fmtTag()+'_PNG.zip');msg(`저장했습니다: ${bn}_${fmtTag()}_PNG.zip (PNG ${total()}장이 압축되어 있습니다. 압축을 풀어서 사용하세요.)`,'ok')}
  catch(e){msg('PNG를 만들지 못했습니다. 사진 수를 줄여 다시 시도해 주세요.','err')}
  setBusy(false)};
+
+/* ===== 색 분위기 견본 ===== */
+(function(){const box=$('#swatches');
+ THEMES.forEach((t,i)=>{const b=document.createElement('button');b.type='button';b.className='swb';b.dataset.i=i;b.setAttribute('role','radio');b.setAttribute('aria-label','색 분위기 '+t.n);
+  b.innerHTML='<span class="swp" style="background:'+t.bg+';color:'+t.ink+'"><i style="color:'+t.ac+'">가</i>나다<em style="background:'+t.ac+'"></em></span><span class="swl">'+t.n+'</span>';
+  b.onclick=()=>{$('#th').value=i;$('#th').dispatchEvent(new Event('input',{bubbles:true}))};box.append(b)});
+ const mark=()=>document.querySelectorAll('.swb').forEach(b=>{const on=b.dataset.i===String($('#th').value);b.setAttribute('aria-checked',on);b.classList.toggle('on',on)});
+ $('#th').addEventListener('input',mark);mark()})();
+
+/* ===== 목차 ===== */
+function tocGeom(){const land=W>H,top=Math.round(H*(land?.29:.21)),bottom=H-Math.round(H*(land?.11:.08)),rowH=land?60:Math.round(H*.056),rows=Math.max(1,Math.floor((bottom-top)/rowH));return{land,top,rowH,rows,cap:rows*(land?2:1)}}
+function tocPages(){if(!tocOn||!photos.length)return 0;return Math.max(1,Math.ceil(photos.length/tocGeom().cap))}
+function tocLabel(){return $('#toct').value.trim()||'목차'}
+function tocRects(j){const g=tocGeom(),all=photos.map((p,i)=>({i,t:p.title.trim()||(i+1)+'번 사진'})),part=all.slice(j*g.cap,(j+1)*g.cap),two=g.land&&part.length>g.rows,mx=g.land?(two?90:Math.round(W*.2)):Math.round(W*.1),gap=60,cw=two?(W-2*mx-gap)/2:W-2*mx,used=two?g.rows:part.length,off=Math.round((g.rows-used)*g.rowH*.3);
+ return part.map((e,k)=>{const c=two?Math.floor(k/g.rows):0,r=two?k%g.rows:k;return{x:mx+c*(cw+gap),y:g.top+off+r*g.rowH,w:cw,h:g.rowH,pg:photoPage(e.i),t:e.t}})}
+function drawToc(ctx,T,j){const K=tocPages(),f=Math.min(1,W/1100),F=fo(),ty=Math.round(H*(W>H?.09:.07));
+ const h=centerText(ctx,tocLabel()+(K>1?' ('+(j+1)+'/'+K+')':''),W/2,ty,W-200,Math.round(64*f),'700',T.ac,1);
+ ctx.fillStyle=T.ac;ctx.fillRect(W/2-50,ty+h+6,100,4);
+ const ts=W>H?32:Math.round(Math.min(40,34*W/720));
+ tocRects(j).forEach(r=>{const mid=r.y+r.h/2;
+  ctx.font='700 '+ts+'px '+F;const pn=String(r.pg+1),pw=ctx.measureText(pn).width;
+  ctx.font='400 '+ts+'px '+F;let t=r.t;const maxT=r.w-pw-80;
+  if(ctx.measureText(t).width>maxT){while(t.length>1&&ctx.measureText(t+'…').width>maxT)t=t.slice(0,-1);t+='…'}
+  const tw=ctx.measureText(t).width;
+  ctx.textBaseline='middle';ctx.fillStyle=T.ink;ctx.textAlign='left';ctx.fillText(t,r.x,mid);
+  ctx.save();ctx.strokeStyle=T.ink;ctx.globalAlpha=.35;ctx.lineWidth=3;ctx.lineCap='round';ctx.setLineDash([1,10]);ctx.beginPath();ctx.moveTo(r.x+tw+18,mid+ts*.3);ctx.lineTo(r.x+r.w-pw-18,mid+ts*.3);ctx.stroke();ctx.restore();
+  ctx.font='700 '+ts+'px '+F;ctx.fillStyle=T.ac;ctx.textAlign='right';ctx.fillText(pn,r.x+r.w,mid);ctx.textAlign='left'});
+ ctx.textBaseline='alphabetic';ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font='400 22px '+F;ctx.textAlign='right';ctx.fillText((j+2)+'쪽',W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
+$('#toc').addEventListener('change',()=>{tocOn=$('#toc').checked;$('#tocopt').hidden=!tocOn;cur=tocOn&&photos.length?1:0;render();if(tocOn&&!photos.length)msg('사진을 올리면 목차 쪽이 만들어집니다.')});
+$('#toct').addEventListener('input',()=>{if(tocOn&&photos.length){cur=1;render()}});
+
+/* ===== AI 글쓰기 도우미 (AI 연결 없이: 질문 복사 → 새 창에서 답 받기 → 붙여넣어 채우기) ===== */
+const AIS={chatgpt:{n:'ChatGPT',u:t=>'https://chatgpt.com/?q='+encodeURIComponent(t),h:'https://chatgpt.com/'},claude:{n:'Claude',u:t=>'https://claude.ai/new?q='+encodeURIComponent(t),h:'https://claude.ai/new'},gemini:{n:'Gemini',u:()=>'https://gemini.google.com/app',h:'https://gemini.google.com/app'}};
+let aiSite='chatgpt',aiLast=null;
+const aiG=id=>$('#'+id).value.trim();
+function aiCtx(){return{topic:aiG('ai_topic')||'(위 칸에 주제를 적어 주세요. 예: 어머니 칠순 가족여행)',who:aiG('ai_who')||'가족',tone:aiG('ai_tone')}}
+function aiMemo(){return photos.length?photos.map((p,i)=>(i+1)+'번: '+([p.title.trim(),p.text.trim()].filter(Boolean).join(' / ')||'(메모 없음)')).join('\n'):'1번: (사진을 올리면 번호별 메모가 여기에 들어갑니다)'}
+const AIT=[
+{id:'cover',t:'① 표지 문구 만들기',d:'제목·부제·마무리 문구를 한 번에 받습니다.',fill:true,b:()=>{const c=aiCtx();return `당신은 따뜻한 문장을 잘 쓰는 사진 앨범 편집자입니다.
+아래 정보를 바탕으로 앨범의 표지 문구를 만들어 주세요.
+
+- 앨범 주제: ${c.topic}
+- 보는 사람: ${c.who}
+- 분위기: ${c.tone}
+
+규칙
+- 제목은 15자 이내, 부제는 25자 이내, 마무리 문구는 30자 이내로 쓰세요.
+- 과장된 표현과 영어는 쓰지 마세요.
+- 인사말이나 설명 없이, 아래 세 줄만 쓰세요.
+
+제목: 
+부제: 
+마무리 문구: `}},
+{id:'photos',t:'② 사진마다 제목·설명 쓰기',d:'내가 사진마다 적어 둔 제목·설명을 메모로 삼아 글을 다듬어 줍니다. (사진은 AI에 올라가지 않습니다)',fill:true,b:()=>{const c=aiCtx();return `당신은 사진 앨범 편집자입니다. 저는 사진을 보여 드릴 수 없어서, 사진마다 메모를 적어 드립니다.
+메모를 바탕으로 사진마다 제목과 설명을 써 주세요.
+
+- 앨범 주제: ${c.topic}
+- 보는 사람: ${c.who}
+- 분위기: ${c.tone}
+- 사진 수: ${photos.length||'(사진을 올리면 채워집니다)'}장
+
+사진 메모
+${aiMemo()}
+
+규칙
+- 제목은 15자 이내, 설명은 2~3문장 100자 안팎으로 쓰세요.
+- 메모에 없는 사실(이름, 날짜, 장소)은 지어내지 마세요.
+- 인사말이나 설명 없이, 아래 형식의 줄만 쓰세요. '|' 글자는 구분용으로만 쓰세요.
+
+1번 | 제목 | 설명
+2번 | 제목 | 설명`}},
+{id:'titles',t:'③ 사진 제목만 지어 보기',d:'목차에 들어갈 짧은 제목이 필요할 때 좋습니다.',fill:true,b:()=>{const c=aiCtx();return `당신은 사진 앨범 편집자입니다. 사진은 볼 수 없으니 제가 적은 메모만 바탕으로, 사진마다 짧은 제목을 지어 주세요.
+
+- 앨범 주제: ${c.topic}
+- 분위기: ${c.tone}
+
+사진 메모
+${aiMemo()}
+
+규칙
+- 제목은 12자 이내로 쓰고, 메모에 없는 사실은 지어내지 마세요.
+- 인사말이나 설명 없이, 아래 형식의 줄만 쓰세요.
+
+1번 | 제목
+2번 | 제목`}},
+{id:'closing',t:'④ 마무리 문구 후보 받기',d:'마음에 드는 문구를 골라 마무리 문구 칸에 직접 적으세요.',fill:false,b:()=>{const c=aiCtx();return `사진 앨범의 마지막 쪽에 넣을 마무리 문구를 5개 제안해 주세요.
+
+- 앨범 주제: ${c.topic}
+- 보는 사람: ${c.who}
+- 분위기: ${c.tone}
+
+규칙: 한 줄에 하나씩, 30자 이내, 번호를 붙여 주세요. 과장된 표현은 피해 주세요.`}},
+{id:'polish',t:'⑤ 내가 쓴 글 다듬기',d:'아래 [ ] 안에 내 글을 붙여 넣은 뒤 사용하세요.',fill:false,b:()=>{const c=aiCtx();return `아래 글을 '${c.tone}' 말투로 다듬어 주세요. 원래 뜻과 사실은 바꾸지 말고, 3가지 버전을 보여 주세요.
+
+[여기에 내가 쓴 글을 붙여 넣으세요]`}}];
+function buildAiCards(){const box=$('#ai_list');box.innerHTML='';
+ AIT.forEach(a=>{const d=document.createElement('div');d.className='card aic';
+  d.innerHTML='<div class="aih"><b>'+a.t+'</b>'+(a.fill?'<span class="chip">붙여넣기로 채우기</span>':'<span class="chip g">복사해서 사용</span>')+'</div><p class="note">'+a.d+'</p><textarea readonly rows="8" data-k="'+a.id+'" aria-label="'+a.t+' 질문"></textarea><div class="row"><button type="button" class="sub cp">복사</button><button type="button" class="op"></button></div>';
+  d.querySelector('.cp').onclick=()=>aiCopy(a,false);d.querySelector('.op').onclick=()=>aiCopy(a,true);box.append(d)});refreshAi()}
+function refreshAi(){document.querySelectorAll('#ai_list textarea').forEach(t=>{const a=AIT.find(x=>x.id===t.dataset.k);if(a){const v=a.b();if(t.value!==v)t.value=v}});document.querySelectorAll('#ai_list .op').forEach(b=>b.textContent='복사하고 '+AIS[aiSite].n+' 열기 ↗')}
+function aiMsg(t,c){const m=$('#aimsg');m.textContent=t;m.className=c||''}
+async function copyText(t){try{await navigator.clipboard.writeText(t);return true}catch(e){const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;left:-999px;top:0;opacity:0';document.body.append(ta);ta.select();let ok=false;try{ok=document.execCommand('copy')}catch(_){}ta.remove();return ok}}
+function aiCopy(a,open){const text=a.b(),site=AIS[aiSite],cp=copyText(text);let w=null;
+ if(open){let u=site.u(text);if(u.length>1800)u=site.h;w=window.open(u,'_blank','popup=yes,width=620,height=820');if(w){try{w.opener=null}catch(_){}}}
+ cp.then(ok=>{const pop=open&&!w?' 팝업이 막혔다면 주소창의 팝업 허용을 누르거나 '+site.n+'를 직접 열어 주세요.':'';
+  aiMsg(ok?'복사했습니다.'+(open?' 열린 '+site.n+' 창의 입력칸에 붙여넣기(Ctrl+V)한 뒤 보내기를 누르세요.':' '+site.n+' 같은 AI 사이트에 붙여넣기(Ctrl+V)하세요.')+pop:'복사하지 못했습니다. 질문 칸을 눌러 직접 선택해 복사해 주세요.'+pop,ok?'ok':'err')})}
+function aiParse(raw){
+ const lines=String(raw).replace(/\r/g,'').replace(/[*`]/g,'').replace(/：/g,':').replace(/｜/g,'|').split('\n')
+  .map(l=>l.replace(/^[\s>#]+/,'').replace(/^[-•·]\s*/,'').replace(/^\|\s*/,'').replace(/\s*\|$/,'').trim()).filter(l=>l&&!/^[-:\s|]+$/.test(l));
+ const q=t=>t.replace(/^["'“”‘’「『]+|["'“”‘’」』]+$/g,'').trim();const out={cover:{},photos:{}};
+ for(const l of lines){let m;
+  if((m=l.match(/^(?:앨범\s*)?제목\s*:\s*(.+)$/)))out.cover.ct=q(m[1]);
+  else if((m=l.match(/^부제(?:목)?\s*:\s*(.+)$/)))out.cover.cs=q(m[1]);
+  else if((m=l.match(/^(?:마무리\s*문구|마무리|맺음말|끝맺음\s*문구)\s*:\s*(.+)$/)))out.cover.ce=q(m[1]);
+  else if((m=l.match(/^(\d{1,3})\s*(?:번째|번)?\s*[|:]\s*(.+)$/))){const pt=m[2].split('|').map(t=>q(t.trim()));out.photos[+m[1]]={title:pt[0]||'',text:pt.slice(1).join(' ').trim()}}}
+ return out}
+function aiApply(){const raw=$('#ai_paste').value;if(!raw.trim()){aiMsg('붙여넣은 내용이 없습니다. AI가 써 준 답을 위 칸에 붙여넣어 주세요.','err');return}
+ const r=aiParse(raw),cut=[],done=[],lim={ct:30,cs:40,ce:40},nm={ct:'제목',cs:'부제',ce:'마무리 문구'};
+ const nums=Object.keys(r.photos).map(Number).sort((a,b)=>a-b),skipped=[],applied=[];
+ if(!Object.keys(r.cover).length&&!nums.length){aiMsg('읽을 수 있는 줄이 없습니다. 질문에 적힌 형식(제목: … / 1번 | 제목 | 설명)으로 답을 받았는지 확인해 주세요.','err');return}
+ const snap={ct:$('#ct').value,cs:$('#cs').value,ce:$('#ce').value,ph:photos.map(p=>[p.title,p.text])};
+ for(const k of ['ct','cs','ce'])if(r.cover[k]){let v=r.cover[k];if(v.length>lim[k]){v=v.slice(0,lim[k]);cut.push(nm[k])}$('#'+k).value=v;done.push(nm[k])}
+ for(const n of nums){const p=photos[n-1];if(!p){skipped.push(n);continue}const x=r.photos[n];let t=x.title,b=x.text;
+  if(t.length>30){t=t.slice(0,30);cut.push(n+'번 제목')}if(b.length>240){b=b.slice(0,240);cut.push(n+'번 설명')}if(t)p.title=t;if(b)p.text=b;applied.push(n)}
+ if(!done.length&&!applied.length){aiMsg('채울 수 있는 칸이 없습니다. 사진 번호가 올린 사진 수('+photos.length+'장)와 맞는지 확인해 주세요.','err');return}
+ aiLast=snap;$('#ai_undo').disabled=false;refreshCover();buildList();cur=done.length?0:photoPage(applied[0]-1);render();
+ aiMsg('채웠습니다: '+[done.length?done.join('·'):'',applied.length?'사진 '+applied.length+'장('+applied.join('·')+'번)':''].filter(Boolean).join(' + ')+'. 마음에 들지 않으면 [되돌리기]를 누르세요.'+(cut.length?' ※ 글자 수 제한으로 일부가 잘렸습니다: '+cut.join(', ')+'.':'')+(skipped.length?' ※ 사진이 '+photos.length+'장이라 '+skipped.join('·')+'번은 건너뛰었습니다.':''),'ok')}
+$('#ai_fill').onclick=aiApply;
+$('#ai_undo').onclick=()=>{if(!aiLast)return;const s=aiLast;$('#ct').value=s.ct;$('#cs').value=s.cs;$('#ce').value=s.ce;
+ if(photos.length===s.ph.length)s.ph.forEach((v,i)=>{photos[i].title=v[0];photos[i].text=v[1]});
+ aiLast=null;$('#ai_undo').disabled=true;buildList();refreshCover();render();aiMsg(photos.length===s.ph.length?'되돌렸습니다.':'표지 문구만 되돌렸습니다. (그 사이 사진 수가 바뀌었습니다)','ok')};
+document.querySelectorAll('input[name=aisite]').forEach(r=>r.onchange=()=>{aiSite=r.value;refreshAi()});
+['ai_topic','ai_who','ai_tone'].forEach(id=>$('#'+id).addEventListener('input',refreshAi));
+$('#ai_go').onclick=()=>{const d=$('#aid');d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})};
+buildAiCards();
 applyFormat();refreshCover();render();
 </script>
 </body>
