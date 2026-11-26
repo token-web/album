@@ -95,7 +95,8 @@ button.op{background:#FF9F1C;color:#0D1B2A}
 <h2><b>1</b>사진 올리기</h2>
 <label class="pick" for="file">사진 고르기 (여러 장 가능)</label>
 <input id="file" type="file" accept="image/*" multiple>
-<p class="note">올린 순서대로 쪽이 만들어집니다. 사진 1장만으로도 PDF를 만들 수 있어요.</p>
+<p class="note">올린 순서대로 쪽이 만들어지고, 아래 사진 카드의 ▲▼ 버튼으로 순서를 바꿀 수 있어요. 작업 파일로 저장해 두면 나중에 이어서 만들 수 있어요.</p>
+<div class="row"><button type="button" class="sub" id="sampleBtn">샘플 사진으로 체험하기</button><button type="button" class="sub" id="saveWork">작업 저장 (파일)</button><label class="pick" for="loadWork" style="background:#DDF3EF;color:#0D1B2A;font-size:16px;padding:8px 12px">작업 불러오기</label><input id="loadWork" type="file" accept=".json,application/json"></div>
 <div id="list"></div>
 </section>
 <section>
@@ -107,6 +108,10 @@ button.op{background:#FF9F1C;color:#0D1B2A}
 <div class="fld"><span>마무리 문구</span><input type="text" id="ce" maxlength="40" value="우리 집 이야기, 이제 시작"></div>
 <div class="fld"><span>화면 비율 (저장되는 모양)</span><select id="fm"></select></div>
 <p class="note">세로형(9:16, 4:5)에서는 글이 항상 사진 아래에 놓입니다.</p>
+<div class="fld"><span>한 쪽에 사진 몇 장? (템플릿)</span><select id="lay"><option value="1">1장 (사진마다 한 쪽)</option><option value="2">2장을 모아서 한 쪽</option><option value="3">3장을 모아서 한 쪽</option></select></div>
+<div class="fld"><span>사진 틀 (프레임)</span><select id="frm"><option value="def">기본 (흰 테두리)</option><option value="pol">폴라로이드</option><option value="fr">액자 (포인트 색 테두리)</option><option value="rd">둥근 모서리</option></select></div>
+<div class="fld"><span>여러 장 모을 때 사진 채우기</span><select id="fill"><option value="fit">사진 전체가 보이게</option><option value="cover">칸을 꽉 채우기 (가장자리가 잘림)</option></select></div>
+<p class="note">2~3장을 모으면 사진 제목이 사진 아래 한 줄로 들어갑니다. 긴 설명은 1장 모드에서 보입니다.</p>
 <div class="fld"><span>색 분위기 (전자책 읽기 색을 포함한 10가지)</span><div class="sw" id="swatches" role="radiogroup" aria-label="색 분위기"></div><select id="th" hidden aria-hidden="true"></select></div>
 <div class="fld"><span>글꼴</span><select id="fo"></select></div>
 <div class="tocbox"><label class="chk"><input type="checkbox" id="toc"> 목차 쪽 넣기 (표지 바로 뒤)</label>
@@ -180,9 +185,9 @@ FORMATS.forEach((t,i)=>$('#fm').add(new Option(t.n,i)));
 const fmtTag=()=>FORMATS[$('#fm').value].t;
 function applyFormat(){const f=FORMATS[$('#fm').value];W=f.w;H=f.h;S=f.s;const c=$('#cv');c.width=W;c.height=H;c.style.width=`min(100%,${Math.round(78*W/H)}vh)`}
 let tocOn=false;
-const total=()=>photos.length+2+tocPages();
-const photoPage=i=>tocPages()+1+i;
-function pageInfo(i){const k=tocPages(),n=photos.length;if(i===0)return{t:'cover'};if(i<=k)return{t:'toc',j:i-1};if(i===n+k+1)return{t:'end'};return{t:'photo',idx:i-k-1}}
+const PER=()=>+$('#lay').value||1,groups=()=>Math.ceil(photos.length/PER()),total=()=>groups()+2+tocPages();
+const photoPage=i=>tocPages()+1+Math.floor(i/PER());
+function pageInfo(i){const k=tocPages(),n=photos.length;if(i===0)return{t:'cover'};if(i<=k)return{t:'toc',j:i-1};if(i===groups()+k+1)return{t:'end'};return{t:'photo',idx:i-k-1}}
 const th=()=>THEMES[$('#th').value],fo=()=>FONTS[$('#fo').value].f;
 function msg(t,c){const m=$('#msg');m.textContent=t;m.className=c||''}
 function fitBox(im,x,y,w,h,cover){const r=cover?Math.max(w/im.width,h/im.height):Math.min(w/im.width,h/im.height),dw=im.width*r,dh=im.height*r;return[x+(w-dw)/2,y+(h-dh)/2,dw,dh]}
@@ -227,18 +232,19 @@ function drawPage(ctx,i,sc=1){
   const f=Math.min(1,W/1100),mw=W-220,y0=Math.round(H*.375);
   const h1=centerText(ctx,$('#ce').value||'고맙습니다',W/2,y0,mw,Math.round(72*f),'700',T.ac,2);
   centerText(ctx,'AI로 다시 만나는 나의 추억',W/2,y0+h1+30,mw,Math.max(26,Math.round(28*f)),'400',T.ink,1);return}
- const p=photos[info.idx],im=p.c,title=p.title.trim(),body=p.text.trim(),has=title||body;
+ const PN=PER(),grp=photos.slice(info.idx*PN,info.idx*PN+PN);
+ if(grp.length>1){const cs=cells(grp.length,W>H),ac=grp.some(q=>q.title.trim()),sty=$('#frm').value,cv=$('#fill').value==='cover';
+  grp.forEach((q,k)=>drawFrame(ctx,q.c,cs[k],sty,T,sc,ac?q.title.trim():null,cv,q,sty==='pol'?(k%2?.03:-.03):0));foot(ctx,T,i);return}
+ const p=grp[0],im=p.c,title=p.title.trim(),body=p.text.trim(),has=title||body;
  const land=W>H;let pos=p.pos;if(!land)pos='below';else if(pos==='auto')pos=im.width/im.height>=1.6?'below':'right';
  let pb,tb;
  if(!has)pb=[60,50,W-120,H-100];
  else if(!land){const ph=Math.round(H*.56);pb=[50,50,W-100,ph];tb=[70,ph+100,W-140,H-ph-150]}
  else if(pos==='right'){pb=[60,60,680,600];tb=[790,60,430,600]}
  else{pb=[60,40,1160,415];tb=[100,480,1080,205]}
- const [dx,dy,dw,dh]=fitBox(im,...pb);
- ctx.save();ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=18*sc;ctx.shadowOffsetY=4*sc;ctx.fillStyle='#fff';ctx.fillRect(dx-12,dy-12,dw+24,dh+24);ctx.restore();
- ctx.drawImage(im,dx,dy,dw,dh);
+ drawFrame(ctx,im,[pb[0]-12,pb[1]-12,pb[2]+24,pb[3]+24],$('#frm').value,T,sc,null,false,p,0);
  if(has)textBlock(ctx,T,...tb,title,body,pos==='right');
- ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font=`400 22px ${fo()}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(`${i+1}쪽`,W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
+ foot(ctx,T,i)}
 async function fontsReady(){const f=fo();const tx=Array.from(document.querySelectorAll('input[type=text],textarea')).map(e=>e.value).join('')+'제목을 입력하세요고맙습니다번쪽0123456789';try{await Promise.race([Promise.all(['400','700'].map(w=>document.fonts.load(`${w} 40px ${f}`,tx))),new Promise(r=>setTimeout(r,10000))])}catch(e){}}
 let rt=0;
 function render(){clearTimeout(rt);rt=setTimeout(async()=>{await fontsReady();cur=Math.min(cur,total()-1);drawPage($('#cv').getContext('2d'),cur,1);$('#pg').textContent=`${cur+1} / ${total()}쪽`;$('#prev').disabled=cur===0;$('#next').disabled=cur>=total()-1;refreshAi()},30)}
@@ -247,12 +253,16 @@ function refreshCover(){const s=$('#cp');s.innerHTML='';s.add(new Option('사진
 function thumb(c){const t=document.createElement('canvas');t.width=160;t.height=120;const x=t.getContext('2d');x.fillStyle='#eee';x.fillRect(0,0,160,120);x.drawImage(c,...fitBox(c,0,0,160,120));return t}
 function buildList(){const L=$('#list');L.innerHTML='';
  photos.forEach((p,i)=>{const d=document.createElement('div');d.className='card';
-  d.innerHTML=`<div class="no">${i+1}번 사진</div><div class="row"></div><input class="t" type="text" maxlength="30" placeholder="제목 (예: 아버지의 어린 시절)"><textarea class="b" rows="3" maxlength="240" placeholder="사진 설명 (3~4문장, 100자 안팎이 보기 좋아요)"></textarea><div class="row"><select class="s"><option value="auto">글 위치: 자동</option><option value="right">글 위치: 오른쪽</option><option value="below">글 위치: 아래</option></select><button class="sub u">▲ 위로</button><button class="sub dn">▼ 아래로</button><button class="sub x">삭제</button></div>`;
+  d.innerHTML=`<div class="no">${i+1}번 사진</div><div class="row"></div><input class="t" type="text" maxlength="30" placeholder="제목 (예: 아버지의 어린 시절)"><textarea class="b" rows="3" maxlength="240" placeholder="사진 설명 (3~4문장, 100자 안팎이 보기 좋아요)"></textarea><div class="row"><button class="sub rl">↺ 왼쪽 돌리기</button><button class="sub rr">↻ 오른쪽 돌리기</button><select class="f"><option value="none">보정: 없음</option><option value="bw">흑백</option><option value="sepia">세피아</option><option value="bright">밝게</option></select><select class="fc"><option value="0.5,0.5">모아 찍을 때 초점: 가운데</option><option value="0.5,0">초점: 위쪽</option><option value="0.5,1">초점: 아래쪽</option><option value="0,0.5">초점: 왼쪽</option><option value="1,0.5">초점: 오른쪽</option></select></div>
+<div class="row"><select class="s"><option value="auto">글 위치: 자동</option><option value="right">글 위치: 오른쪽</option><option value="below">글 위치: 아래</option></select><button class="sub u">▲ 위로</button><button class="sub dn">▼ 아래로</button><button class="sub x">삭제</button></div>`;
   d.querySelector('.row').append(thumb(p.c));
   const t=d.querySelector('.t'),b=d.querySelector('.b'),s=d.querySelector('.s');t.value=p.title;b.value=p.text;s.value=p.pos;
   const go=()=>{cur=photoPage(i);render()};
   t.oninput=()=>{p.title=t.value;go()};b.oninput=()=>{p.text=b.value;go()};s.onchange=()=>{p.pos=s.value;go()};
   t.onfocus=b.onfocus=go;
+  d.querySelector('.rl').onclick=()=>{rot(p,-1);buildList();go()};d.querySelector('.rr').onclick=()=>{rot(p,1);buildList();go()};
+  const fl=d.querySelector('.f'),fc=d.querySelector('.fc');fl.value=p.f;fc.value=p.fx+','+p.fy;
+  fl.onchange=()=>{p.f=fl.value;adj(p);buildList();go()};fc.onchange=()=>{[p.fx,p.fy]=fc.value.split(',').map(Number);go()};
   d.querySelector('.u').onclick=()=>mv(i,-1);d.querySelector('.dn').onclick=()=>mv(i,1);
   d.querySelector('.x').onclick=()=>{photos.splice(i,1);cur=Math.min(cur,total()-1);if(!photos.length)coverIdx=-1;refreshCover();buildList();render()};
   L.append(d)})}
@@ -262,7 +272,7 @@ function loadFile(f){return new Promise((ok,no)=>{const u=URL.createObjectURL(f)
  im.onerror=()=>{URL.revokeObjectURL(u);no(f.name)};im.src=u})}
 $('#file').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;
  msg('사진을 불러오는 중입니다…');const bad=[];
- for(const f of fs){try{photos.push({c:await loadFile(f),title:'',text:'',pos:'auto'})}catch(x){bad.push(x)}}
+ for(const f of fs){try{const cc=await loadFile(f);photos.push({c:cc,o:cc,title:'',text:'',pos:'auto',f:'none',fx:.5,fy:.5})}catch(x){bad.push(x)}}
  if(coverIdx<0&&photos.length)coverIdx=0;
  refreshCover();buildList();cur=photos.length?photoPage(photos.length-1):0;render();
  if(bad.length)msg(`열 수 없는 사진이 있습니다: ${bad.join(', ')} — JPG 또는 PNG로 저장한 사진을 올려 주세요. (아이폰 HEIC 등)`,'err');
@@ -321,7 +331,7 @@ function makeZip(files){
  return new Blob([...parts,...cd,new Uint8Array(e.buffer)],{type:'application/zip'})}
 const canvasBytes=c=>new Promise((ok,no)=>c.toBlob(async b=>b?ok(new Uint8Array(await b.arrayBuffer())):no(new Error('png')),'image/png'));
 const baseName=()=>($('#ct').value||'앨범').replace(/[\\\/:*?"<>|]/g,'').trim()||'앨범';
-const pageLabel=i=>{const f=pageInfo(i);return f.t==='cover'?'표지':f.t==='toc'?'목차'+(tocPages()>1?(f.j+1):''):f.t==='end'?'마무리':`${f.idx+1}번사진`};
+const pageLabel=i=>{const f=pageInfo(i);return f.t==='cover'?'표지':f.t==='toc'?'목차'+(tocPages()>1?(f.j+1):''):f.t==='end'?'마무리':(PER()>1?`사진모음${f.idx+1}`:`${f.idx+1}번사진`)};
 function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
 async function pageCanvas(i){const c=document.createElement('canvas');c.width=Math.round(W*S);c.height=Math.round(H*S);const x=c.getContext('2d');x.setTransform(S,0,0,S,0,0);drawPage(x,i,S);return c}
 $('#savePng').onclick=async()=>{
@@ -474,6 +484,60 @@ document.querySelectorAll('input[name=aisite]').forEach(r=>r.onchange=()=>{aiSit
 ['ai_topic','ai_who','ai_tone'].forEach(id=>$('#'+id).addEventListener('input',refreshAi));
 $('#ai_go').onclick=()=>{const d=$('#aid');d.open=true;d.scrollIntoView({behavior:'smooth',block:'start'})};
 buildAiCards();
+/* ===== 템플릿(프레임·모아 찍기)·사진 보정·작업 저장 ===== */
+function foot(ctx,T,i){ctx.fillStyle=T.ink;ctx.globalAlpha=.5;ctx.font=`400 22px ${fo()}`;ctx.textAlign='right';ctx.textBaseline='alphabetic';ctx.fillText(`${i+1}쪽`,W-40,H-22);ctx.globalAlpha=1;ctx.textAlign='left'}
+function rr(x,a,b,w,h,r){x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()}
+function cells(n,land){const x=60,y=50,w=W-120,h=H-100,g=36;
+ if(n===2)return land?[[x,y,(w-g)/2,h],[x+(w+g)/2,y,(w-g)/2,h]]:[[x,y,w,(h-g)/2],[x,y+(h+g)/2,w,(h-g)/2]];
+ return land?[[x,y,w*.56,h],[x+w*.56+g,y,w*.44-g,(h-g)/2],[x+w*.56+g,y+(h+g)/2,w*.44-g,(h-g)/2]]:[[x,y,w,h*.5],[x,y+h*.5+g,(w-g)/2,h*.5-g],[x+(w+g)/2,y+h*.5+g,(w-g)/2,h*.5-g]]}
+function drawFrame(ctx,im,b,sty,T,sc,cap,cov,p,tilt){
+ const m={def:12,pol:16,fr:26,rd:0}[sty],xb=sty==='pol'?56:0,cb=(cap!==null&&sty!=='pol')?50:0,[x,y,w,h]=b,iw=w-2*m,ih=h-2*m-xb-cb;
+ let dx,dy,dw,dh;if(cov){dx=x+m;dy=y+m;dw=iw;dh=ih}else[dx,dy,dw,dh]=fitBox(im,x+m,y+m,iw,ih);
+ ctx.save();
+ if(tilt){const cx=x+w/2,cy=y+h/2;ctx.translate(cx,cy);ctx.rotate(tilt);ctx.translate(-cx,-cy)}
+ ctx.shadowColor='rgba(0,0,0,.25)';ctx.shadowBlur=18*sc;ctx.shadowOffsetY=4*sc;ctx.fillStyle=sty==='fr'?T.ac:'#fff';
+ if(sty==='rd'){rr(ctx,dx,dy,dw,dh,28);ctx.fill()}else ctx.fillRect(dx-m,dy-m,dw+2*m,dh+2*m+xb);
+ ctx.shadowColor='transparent';
+ if(sty==='fr'){ctx.fillStyle='#fff';ctx.fillRect(dx-16,dy-16,dw+32,dh+32)}
+ ctx.save();if(sty==='rd'){rr(ctx,dx,dy,dw,dh,28);ctx.clip()}
+ if(cov){const r=Math.max(dw/im.width,dh/im.height),sw=dw/r,sh=dh/r;ctx.drawImage(im,(im.width-sw)*p.fx,(im.height-sh)*p.fy,sw,sh,dx,dy,dw,dh)}else ctx.drawImage(im,dx,dy,dw,dh);
+ ctx.restore();
+ if(cap){ctx.fillStyle=sty==='pol'?'#333':th().ink;ctx.font=`400 26px ${fo()}`;ctx.textAlign='center';ctx.textBaseline='middle';let t=cap;const mx=Math.max(80,dw+2*m-16);
+  while(t.length>1&&ctx.measureText(t===cap?t:t+'…').width>mx)t=t.slice(0,-1);
+  ctx.fillText(t===cap?t:t+'…',dx+dw/2,sty==='pol'?dy+dh+(m+xb)/2:dy+dh+m+28)}
+ ctx.restore()}
+function adj(p){const f=p.f;if(f==='none'){p.c=p.o;return}
+ const c=document.createElement('canvas');c.width=p.o.width;c.height=p.o.height;const x=c.getContext('2d');x.drawImage(p.o,0,0);const d=x.getImageData(0,0,c.width,c.height),a=d.data;
+ for(let i=0;i<a.length;i+=4){let r=a[i],g=a[i+1],b=a[i+2];const y=.299*r+.587*g+.114*b;
+  if(f==='bw')r=g=b=y;else if(f==='sepia'){r=y*1.07+18;g=y*.95+8;b=y*.78}else{r=r*1.15+12;g=g*1.15+12;b=b*1.15+12}
+  a[i]=r;a[i+1]=g;a[i+2]=b}
+ x.putImageData(d,0,0);p.c=c}
+function rot(p,k){const o=p.o,c=document.createElement('canvas');c.width=o.height;c.height=o.width;const x=c.getContext('2d');x.translate(c.width/2,c.height/2);x.rotate(k*Math.PI/2);x.drawImage(o,-o.width/2,-o.height/2);p.o=c;adj(p)}
+['lay','frm','fill'].forEach(id=>$('#'+id).addEventListener('input',()=>{cur=photos.length?photoPage(0):0;render()}));
+const SKEYS=['ct','cs','cn','ce','toct','fm','th','fo','lay','frm','fill'];
+$('#saveWork').onclick=()=>{if(!photos.length){msg('먼저 사진을 1장 이상 올려 주세요.','err');return}
+ const s={};SKEYS.forEach(k=>s[k]=$('#'+k).value);s.toc=tocOn;s.cp=coverIdx;
+ const o={app:'album',v:1,s,photos:photos.map(p=>({d:p.o.toDataURL('image/jpeg',.9),title:p.title,text:p.text,pos:p.pos,f:p.f,fx:p.fx,fy:p.fy}))};
+ saveBlob(new Blob([JSON.stringify(o)],{type:'application/json'}),baseName()+'_작업파일.json');msg('작업 파일을 저장했습니다. 나중에 [작업 불러오기]로 이어서 만들 수 있어요.','ok')};
+$('#loadWork').onchange=async e=>{const f=e.target.files[0];e.target.value='';if(!f)return;
+ try{const o=JSON.parse(await f.text());if(!o||!Array.isArray(o.photos))throw 0;msg('작업을 불러오는 중입니다…');const ph=[];
+  for(const q of o.photos){if(typeof q.d!=='string'||!q.d.startsWith('data:image/'))throw 0;
+   const cc=await new Promise((ok,no)=>{const im=new Image();im.onload=()=>{const c=document.createElement('canvas');c.width=im.width;c.height=im.height;c.getContext('2d').drawImage(im,0,0);ok(c)};im.onerror=no;im.src=q.d});
+   const p={c:cc,o:cc,title:String(q.title||'').slice(0,30),text:String(q.text||'').slice(0,240),pos:['auto','right','below'].includes(q.pos)?q.pos:'auto',f:['bw','sepia','bright'].includes(q.f)?q.f:'none',fx:+q.fx,fy:+q.fy};
+   if(!(p.fx>=0&&p.fx<=1))p.fx=.5;if(!(p.fy>=0&&p.fy<=1))p.fy=.5;adj(p);ph.push(p)}
+  photos=ph;const s=o.s||{};
+  SKEYS.forEach(k=>{const el=$('#'+k);if(s[k]==null)return;if(el.tagName==='SELECT'){if([...el.options].some(op=>op.value===String(s[k])))el.value=s[k]}else el.value=String(s[k])});
+  tocOn=!!s.toc;$('#toc').checked=tocOn;$('#tocopt').hidden=!tocOn;coverIdx=photos.length?Math.min(Math.max(+s.cp||0,-1),photos.length-1):-1;
+  applyFormat();$('#th').dispatchEvent(new Event('input',{bubbles:true}));refreshCover();buildList();cur=0;render();msg(`작업을 불러왔습니다. (사진 ${photos.length}장)`,'ok')}
+ catch(x){msg('작업 파일을 읽지 못했습니다. 이 앱에서 저장한 .json 파일인지 확인해 주세요.','err')}};
+$('#sampleBtn').onclick=()=>{if(photos.length&&!confirm('지금 올린 사진이 샘플 사진으로 바뀝니다. 계속할까요?'))return;
+ const cols=[['#FFD6A5','#FF9F6B'],['#BDE0FE','#6FA8DC'],['#CDEAC0','#6BAA75'],['#FFC8DD','#D66A8E']],tt=['봄 소풍','바닷가 여름','가을 단풍길','가족 생일 잔치'];
+ photos=cols.map((c,i)=>{const k=document.createElement('canvas');k.width=i%2?1000:1200;k.height=i%2?1200:800;const x=k.getContext('2d'),g=x.createLinearGradient(0,0,k.width,k.height);
+  g.addColorStop(0,c[0]);g.addColorStop(1,c[1]);x.fillStyle=g;x.fillRect(0,0,k.width,k.height);
+  x.fillStyle='rgba(255,255,255,.55)';x.beginPath();x.arc(k.width*.7,k.height*.28,k.height*.12,0,7);x.fill();
+  x.fillStyle='rgba(0,0,0,.16)';x.beginPath();x.moveTo(0,k.height);x.quadraticCurveTo(k.width*.3,k.height*.55,k.width*.6,k.height);x.fill();
+  return{c:k,o:k,title:tt[i],text:'샘플 사진입니다. 설명도 이렇게 들어갑니다.',pos:'auto',f:'none',fx:.5,fy:.5}});
+ coverIdx=0;refreshCover();buildList();cur=photoPage(0);render();msg('샘플 사진 4장을 넣었습니다. 위에서 [한 쪽에 사진 몇 장?]과 [사진 틀]을 바꿔 보세요.','ok')};
 applyFormat();refreshCover();render();
 </script>
 </body>
